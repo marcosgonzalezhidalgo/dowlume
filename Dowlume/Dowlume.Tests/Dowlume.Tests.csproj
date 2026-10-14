@@ -16,6 +16,9 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <ProjectReference Include="..\Dowlume.Core\Dowlume.Core.csproj" />
+    <ProjectReference Include="..\Dowlume.Infrastructure\Dowlume.Infrastructure.csproj" />
+    <ProjectReference Include="..\Dowlume.Monitoring\Dowlume.Monitoring.csproj" />
   </ItemGroup>
 
 </Project>

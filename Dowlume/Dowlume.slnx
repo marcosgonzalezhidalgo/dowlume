@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="Dowlume.App/Dowlume.App.fsproj" />
+  <Project Path="Dowlume.App/Dowlume.App.csproj" />
   <Project Path="Dowlume.Core/Dowlume.Core.csproj" />
   <Project Path="Dowlume.Infrastructure/Dowlume.Infrastructure.csproj" />
   <Project Path="Dowlume.Monitoring/Dowlume.Monitoring.csproj" />
