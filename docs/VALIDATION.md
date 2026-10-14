@@ -5,7 +5,7 @@ Validation date: 2026-10-14. Environment: Windows 11 x64 (build 26200), .NET SDK
 | Check | Result |
 | --- | --- |
 | Release solution build | Passed, zero warnings and errors. |
-| Automated suite excluding native shell | 43 passed, zero failures or skips. |
+| Automated suite excluding native shell | 44 passed, zero failures or skips. |
 | Native Windows Recycle Bin test | Passed separately, including the verified read handle used by the organizer. |
 | Headless desktop workflow | Preview is non-mutating; declined consent preserves source; accepted consent starts monitoring; pause, review, and Keep work. |
 | Headless rendering | All five tabs rendered; Overview and Settings captures inspected. |

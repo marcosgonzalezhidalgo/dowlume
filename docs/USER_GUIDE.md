@@ -36,7 +36,7 @@ Review is a holding area. There is no automatic deletion deadline.
 
 ## Undo and recovery
 
-Select a completed operation in **Activity** and choose **Undo selected action**. Undo requires unchanged file content, an available original location, and no later completed action on the same file. Undoing initial organization returns the file to the root and marks it Kept, preventing immediate reorganization. Recycle actions are restored through Windows Recycle Bin, not the app.
+Select a completed operation in **Activity** and choose **Undo selected action**. Undo requires unchanged file content, an available original location, and no later completed action on the same file. Undoing initial organization returns the file to the root and marks it Kept, preventing immediate reorganization. Undoing an age-based review move returns the file to its category and snoozes it for seven days, so the next scan does not immediately move it back. Recycle actions are restored through Windows Recycle Bin, not the app.
 
 The operation journal is committed before moving a file. After interruption, **Retry interrupted operations** reconciles the recorded source and destination:
 

@@ -50,7 +50,7 @@ Each entry contains an ID, kind, status, UTC timestamp, source/destination, befo
 
 Recovery verifies SHA-256 before completing a move that reached its destination. Conflicting or missing copies remain NeedsAttention and block further automatic operations for that file/path. Recycle disappearance cannot be proved from the original path alone; its ambiguous recovery requires restoring the item through Windows. Failure handling continues reconciliation for unrelated files.
 
-Undo verifies that the selected operation is the latest completed action on the file, that no completed undo references it, and that the current tracked record still matches. Restoring to an occupied path fails instead of overwriting. Undoing an initial organization creates a Kept record at the original path to prevent a watcher loop.
+Undo verifies that the selected operation is the latest completed action on the file, that no completed undo references it, and that the current tracked record still matches. Restoring to an occupied path fails instead of overwriting. Undoing an initial organization creates a Kept record at the original path to prevent a watcher loop. Undoing a review move snoozes the restored file for seven days to prevent an immediate lifecycle loop.
 
 ## Filesystem safety
 

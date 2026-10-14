@@ -241,6 +241,20 @@ public sealed class OrganizerTests : IDisposable
     }
 
     [Fact]
+    public async Task UndoingReviewDoesNotImmediatelyExpireAgain()
+    {
+        await _organizer.OrganizeAsync(_workspace.CreateFile("review.pdf"), _settings);
+        _clock.Now = _clock.Now.AddDays(31);
+        await _organizer.ReconcileAsync(_settings);
+        await _organizer.UndoAsync(_store.GetOperations().Last().Id, _settings);
+        await _organizer.ReconcileAsync(_settings);
+        Assert.Equal(LifecycleStatus.Snoozed, Assert.Single(_store.GetFiles()).Status);
+        _clock.Now = _clock.Now.AddDays(7);
+        await _organizer.ReconcileAsync(_settings);
+        Assert.Equal(LifecycleStatus.InReview, Assert.Single(_store.GetFiles()).Status);
+    }
+
+    [Fact]
     public async Task StreamsLargeFilesAndPreservesTheirContent()
     {
         string source = _workspace.CreateFile("large.zip", string.Empty);

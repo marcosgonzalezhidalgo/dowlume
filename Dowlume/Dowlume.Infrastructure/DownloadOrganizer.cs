@@ -198,6 +198,15 @@ public sealed class DownloadOrganizer(
                 CurrentPath = operation.SourcePath,
                 Status = LifecycleStatus.Kept
             };
+            if (operation.Kind == OperationKind.Review)
+            {
+                // Reversing an age-based move must survive the next lifecycle scan.
+                restored = restored with
+                {
+                    Status = LifecycleStatus.Snoozed,
+                    SnoozedUntilUtc = _clock.GetUtcNow().AddDays(7)
+                };
+            }
             await ExecuteAsync(OperationKind.Undo, current, restored, current.CurrentPath, operation.SourcePath, cancellationToken, operation.Id);
         }
         finally { _gate.Release(); }

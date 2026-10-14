@@ -177,7 +177,7 @@ public partial class MainViewModel : ObservableObject
     private Task UndoAsync() => RunAsync(async () =>
     {
         OperationRecord operation = SelectedOperation ?? throw new InvalidOperationException("Select an action in Activity first.");
-        if (!await _dialogs.ConfirmAsync("Undo this action?", $"Undo {operation.Description}?\n\nThe original location must be available and the file must be unchanged. Undoing initial organization keeps the file in place permanently.", "Undo action"))
+        if (!await _dialogs.ConfirmAsync("Undo this action?", $"Undo {operation.Description}?\n\nThe original location must be available and the file must be unchanged. Undoing initial organization keeps the file in place permanently. Undoing a review move snoozes the file for seven days.", "Undo action"))
         {
             return;
         }
