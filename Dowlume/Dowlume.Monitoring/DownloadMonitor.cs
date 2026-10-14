@@ -51,7 +51,10 @@ public sealed class DownloadMonitor : IAsyncDisposable
 
     private void Enqueue(string path)
     {
-        if (FileClassifier.IsExcluded(path, _settings) || !_queued.TryAdd(path, 0)) { return; }
+        if (FileClassifier.IsExcluded(path, _settings) || !_queued.TryAdd(path, 0))
+        {
+            return;
+        }
         if (!_queue.Writer.TryWrite(path))
         {
             // Reconciliation will rediscover items that did not fit in the bounded queue.
@@ -65,7 +68,10 @@ public sealed class DownloadMonitor : IAsyncDisposable
         {
             await foreach (string path in _queue.Reader.ReadAllAsync(_shutdown.Token))
             {
-                try { await _process(path, _shutdown.Token); }
+                try
+                {
+                    await _process(path, _shutdown.Token);
+                }
                 catch (OperationCanceledException) when (_shutdown.IsCancellationRequested) { return; }
                 catch (Exception error) { _reportError(error); }
                 finally { _queued.TryRemove(path, out _); }
@@ -90,7 +96,10 @@ public sealed class DownloadMonitor : IAsyncDisposable
                 try
                 {
                     // Re-enable after transient watcher errors; scanning also works without events.
-                    if (!_watcher.EnableRaisingEvents) { _watcher.EnableRaisingEvents = true; }
+                    if (!_watcher.EnableRaisingEvents)
+                    {
+                        _watcher.EnableRaisingEvents = true;
+                    }
                     foreach (string path in Directory.EnumerateFiles(_settings.DownloadsPath))
                     {
                         _shutdown.Token.ThrowIfCancellationRequested();

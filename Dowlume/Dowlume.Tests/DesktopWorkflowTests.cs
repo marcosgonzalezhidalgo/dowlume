@@ -93,10 +93,15 @@ public sealed class DesktopWorkflowTests
 
     private sealed class TestDialogs : IDesktopDialogs
     {
-        public bool Confirm { get; set; }
+        public bool Confirm
+        {
+            get; set;
+        }
         public Task<string?> ChooseFolderAsync(string title) => Task.FromResult<string?>(null);
         public Task<bool> ConfirmAsync(string title, string message, string action) => Task.FromResult(Confirm);
-        public void RevealFile(string path) { }
+        public void RevealFile(string path)
+        {
+        }
     }
 
     private sealed class NoRecycle : IRecycleBin

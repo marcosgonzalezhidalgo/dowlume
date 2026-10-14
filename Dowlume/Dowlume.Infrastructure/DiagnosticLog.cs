@@ -18,7 +18,13 @@ public sealed class DiagnosticLog(string path)
                     File.Move(path, path + ".previous", overwrite: true);
                 }
                 // Exception messages and stack traces can contain personal paths.
-                string record = JsonSerializer.Serialize(new { timeUtc = DateTimeOffset.UtcNow, eventName, errorType = error?.GetType().Name, errorCode = error?.HResult });
+                string record = JsonSerializer.Serialize(new
+                {
+                    timeUtc = DateTimeOffset.UtcNow,
+                    eventName,
+                    errorType = error?.GetType().Name,
+                    errorCode = error?.HResult
+                });
                 File.AppendAllText(path, record + Environment.NewLine);
             }
         }

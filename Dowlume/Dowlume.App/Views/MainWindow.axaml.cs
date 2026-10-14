@@ -1,6 +1,6 @@
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Dowlume.App.ViewModels;
 
@@ -17,11 +17,17 @@ public partial class MainWindow : Window
         AvaloniaXamlLoader.Load(this);
         _refreshTimer.Tick += async (_, _) =>
         {
-            if (DataContext is MainViewModel model) { await model.RefreshAsync(); }
+            if (DataContext is MainViewModel model)
+            {
+                await model.RefreshAsync();
+            }
         };
         Opened += async (_, _) =>
         {
-            if (DataContext is MainViewModel model) { await model.RefreshAsync(); }
+            if (DataContext is MainViewModel model)
+            {
+                await model.RefreshAsync();
+            }
             _refreshTimer.Start();
         };
         Closing += OnClosing;
@@ -31,13 +37,22 @@ public partial class MainWindow : Window
 
     private async void OnClosing(object? sender, WindowClosingEventArgs args)
     {
-        if (_canClose) { return; }
+        if (_canClose)
+        {
+            return;
+        }
         args.Cancel = true;
-        if (_closing) { return; }
+        if (_closing)
+        {
+            return;
+        }
         _closing = true;
         IsEnabled = false;
         _refreshTimer.Stop();
-        if (DataContext is MainViewModel model) { await model.ShutdownAsync(); }
+        if (DataContext is MainViewModel model)
+        {
+            await model.ShutdownAsync();
+        }
         _canClose = true;
         Close();
     }

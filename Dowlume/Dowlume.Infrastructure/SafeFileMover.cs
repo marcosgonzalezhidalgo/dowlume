@@ -15,18 +15,33 @@ public sealed class SafeFileMover
     {
         PathSafety.RejectLinks(source);
         PathSafety.RejectLinks(destination);
-        // Deny writes while checking content and moving. Delete sharing permits a Windows rename.
-        using var stream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 81920, FileOptions.SequentialScan);
-        if (!string.Equals(Convert.ToHexString(SHA256.HashData(stream)), expectedHash, StringComparison.Ordinal))
-        {
-            throw new IOException("The file changed after it was tracked. Review it in Explorer before retrying.");
-        }
+        using FileStream stream = OpenVerifiedRead(source, expectedHash);
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
         PathSafety.RejectLinks(destination);
         File.Move(source, destination, overwrite: false);
         if (File.Exists(source) || !string.Equals(Hash(destination), expectedHash, StringComparison.Ordinal))
         {
             throw new IOException("The move could not be verified. Both paths were preserved for inspection.");
+        }
+    }
+
+    public FileStream OpenVerifiedRead(string path, string expectedHash)
+    {
+        PathSafety.RejectLinks(path);
+        // Deny writes while processing; delete sharing permits Windows shell moves.
+        var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 81920, FileOptions.SequentialScan);
+        try
+        {
+            if (Convert.ToHexString(SHA256.HashData(stream)) != expectedHash)
+            {
+                throw new IOException("The file changed after it was tracked. Review it in Explorer before retrying.");
+            }
+            return stream;
+        }
+        catch
+        {
+            stream.Dispose();
+            throw;
         }
     }
 }

@@ -59,7 +59,11 @@ public sealed class SqliteStateStore : IStateStore
         using SqliteConnection connection = Open();
         using SqliteTransaction transaction = connection.BeginTransaction();
         WriteFile(connection, transaction, operation.After);
-        WriteOperation(connection, transaction, operation with { Status = OperationStatus.Completed, Error = null });
+        WriteOperation(connection, transaction, operation with
+        {
+            Status = OperationStatus.Completed,
+            Error = null
+        });
         transaction.Commit();
     }
 

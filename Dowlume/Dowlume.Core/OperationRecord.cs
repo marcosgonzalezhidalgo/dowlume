@@ -1,7 +1,13 @@
 namespace Dowlume.Core;
 
-public enum OperationKind { Organize, Review, Keep, Snooze, Move, Recycle, Undo }
-public enum OperationStatus { Pending, Completed, Failed, NeedsAttention }
+public enum OperationKind
+{
+    Organize, Review, Keep, Snooze, Move, Recycle, Undo
+}
+public enum OperationStatus
+{
+    Pending, Completed, Failed, NeedsAttention
+}
 
 public sealed record OperationRecord(
     Guid Id,

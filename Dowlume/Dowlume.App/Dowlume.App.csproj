@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/dowlume.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <Product>Dowlume</Product>
+    <Description>A local-first download organizer with safe review and recovery.</Description>
   </PropertyGroup>
 
   <ItemGroup>

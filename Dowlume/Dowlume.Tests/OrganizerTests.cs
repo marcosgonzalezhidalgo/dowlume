@@ -183,6 +183,83 @@ public sealed class OrganizerTests : IDisposable
         Assert.Equal(6, loaded.Categories.Count);
     }
 
+    [Fact]
+    public async Task DuplicateConcurrentRequestsProduceOnlyOneMove()
+    {
+        string source = _workspace.CreateFile("duplicate.pdf");
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => _organizer.OrganizeAsync(source, _settings)));
+        Assert.Single(_store.GetFiles());
+        Assert.Single(_store.GetOperations());
+    }
+
+    [Fact]
+    public async Task ChangedPreviewIsRejectedBeforeAnyMove()
+    {
+        string source = _workspace.CreateFile("preview.pdf");
+        PreviewItem preview = Assert.Single(await _organizer.PreviewAsync(_settings));
+        File.WriteAllText(source, "Changed after preview");
+        await Assert.ThrowsAsync<IOException>(() => _organizer.OrganizeAsync(source, _settings, expectedHash: preview.ContentHash));
+        Assert.True(File.Exists(source));
+        Assert.Empty(_store.GetOperations());
+    }
+
+    [Fact]
+    public async Task FailureOfOneReviewDoesNotStarveOtherFiles()
+    {
+        await _organizer.OrganizeAsync(_workspace.CreateFile("changed.pdf"), _settings);
+        await _organizer.OrganizeAsync(_workspace.CreateFile("unchanged.pdf"), _settings);
+        File.AppendAllText(_store.GetFiles().First().CurrentPath, "User edits");
+        _clock.Now = _clock.Now.AddDays(31);
+        await Assert.ThrowsAsync<IOException>(() => _organizer.ReconcileAsync(_settings));
+        Assert.Equal(LifecycleStatus.Organized, _store.GetFiles().First().Status);
+        Assert.Equal(LifecycleStatus.InReview, _store.GetFiles().Last().Status);
+    }
+
+    [Fact]
+    public async Task RecoveryBeforeMoveAllowsRetryWithoutLosingFirstAttempt()
+    {
+        string source = _workspace.CreateFile("report.pdf");
+        string destination = Path.Combine(_workspace.Downloads, "Documents", "report.pdf");
+        var file = new TrackedFile(Guid.NewGuid(), source, destination, FileCategory.Documents, _clock.Now, LifecycleStatus.Organized, _mover.Hash(source));
+        _store.SaveOperation(new OperationRecord(Guid.NewGuid(), OperationKind.Organize, OperationStatus.Pending, _clock.Now, null, file, source, destination));
+        await _organizer.RetryRecoveryAsync();
+        Assert.Equal(OperationStatus.Failed, Assert.Single(_store.GetOperations()).Status);
+        await _organizer.OrganizeAsync(source, _settings);
+        Assert.Single(_store.GetFiles());
+        Assert.Equal(2, _store.GetOperations().Count);
+    }
+
+    [Fact]
+    public async Task ModifiedContentCannotBeUndone()
+    {
+        await _organizer.OrganizeAsync(_workspace.CreateFile("edited.pdf"), _settings);
+        TrackedFile file = Assert.Single(_store.GetFiles());
+        File.AppendAllText(file.CurrentPath, "User edits");
+        await Assert.ThrowsAsync<IOException>(() => _organizer.UndoAsync(Assert.Single(_store.GetOperations()).Id, _settings));
+        Assert.EndsWith("User edits", File.ReadAllText(file.CurrentPath));
+        Assert.False(File.Exists(file.OriginalPath));
+    }
+
+    [Fact]
+    public async Task StreamsLargeFilesAndPreservesTheirContent()
+    {
+        string source = _workspace.CreateFile("large.zip", string.Empty);
+        using (var stream = new FileStream(source, FileMode.Open, FileAccess.Write))
+        {
+            byte[] block = new byte[1024 * 1024];
+            Random.Shared.NextBytes(block);
+            for (int index = 0; index < 32; index++)
+            {
+                stream.Write(block);
+            }
+        }
+        string expected = _mover.Hash(source);
+        await _organizer.OrganizeAsync(source, _settings);
+        TrackedFile file = Assert.Single(_store.GetFiles());
+        Assert.Equal(expected, _mover.Hash(file.CurrentPath));
+        Assert.Equal(32L * 1024 * 1024, new FileInfo(file.CurrentPath).Length);
+    }
+
     public void Dispose() => _workspace.Dispose();
 
     private sealed class TestClock : TimeProvider

@@ -21,7 +21,10 @@ public sealed class FileReadiness(TimeSpan? observationInterval = null, TimeSpan
             DateTime modified = before.LastWriteTimeUtc;
             await Task.Delay(_observationInterval, cancellationToken);
             var after = new FileInfo(path);
-            if (!after.Exists || after.Length != length || after.LastWriteTimeUtc != modified) { return false; }
+            if (!after.Exists || after.Length != length || after.LastWriteTimeUtc != modified)
+            {
+                return false;
+            }
             using var probe = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
             return probe.Length == length;
         }

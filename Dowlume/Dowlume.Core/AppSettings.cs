@@ -5,7 +5,10 @@ public sealed record AppSettings
     public const string ReviewFolderName = "Expiring Files";
 
     public string DownloadsPath { get; init; } = string.Empty;
-    public List<CategoryRule> Categories { get; init; } =
+    public List<CategoryRule> Categories
+    {
+        get; init;
+    } =
     [
         new(FileCategory.Documents, "Documents", [".pdf", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".csv", ".odt", ".epub"], 30),
         new(FileCategory.Images, "Images", [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".heic", ".bmp", ".tiff"], 60),

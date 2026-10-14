@@ -9,7 +9,10 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        if (args is ["--data-directory", var directory]) { DataDirectory = Path.GetFullPath(directory); }
+        if (args is ["--data-directory", var directory])
+        {
+            DataDirectory = Path.GetFullPath(directory);
+        }
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
