@@ -2,109 +2,52 @@
 
 **Your downloads, under control.**
 
-Dowlume is a planned, local-first desktop application that helps you keep your Downloads folder organized without taking control away from you. It sorts completed downloads into manageable categories, identifies files that may no longer be needed, and provides a safe review workflow before you decide what to keep, move, or discard.
+Dowlume is a local-first Windows desktop application that organizes completed downloads, moves aging files into a review area, and leaves the final decision with you.
 
-> **Project status:** Early planning. The features described below are goals, not yet implemented.
+**Status:** 0.1.0 release candidate implementation. See [validation](docs/VALIDATION.md) for checks actually performed and the [release checklist](docs/RELEASE_CHECKLIST.md) for publication gates.
 
-## Why Dowlume?
+## What it does
 
-Downloads folders accumulate installers, documents, pictures, archives, and temporary files. Traditional cleanup tools can require complex rules or make irreversible changes. Dowlume aims to provide a simpler alternative: organize downloads inside their existing folder, highlight aging files, and let users make the final decision.
+- Preview existing files before consenting to organization and monitoring.
+- Detect completed downloads with a watcher, bounded queue, readiness checks, and periodic reconciliation.
+- Sort files into configurable Documents, Images, Videos, Archives, Installers, and Other folders.
+- Handle duplicate names without overwriting existing files.
+- Track first-seen time, category, decisions, and operations in a local SQLite database.
+- Move aging files into **Expiring Files**, where you can Keep, Snooze, Move, or Recycle them.
+- Undo eligible moves and reconcile interrupted operations without guessing which copy to delete.
+- Show a dashboard, review queue, recent activity, errors, settings, and a Windows tray menu.
 
-## Planned features
+There is no automatic permanent deletion, online account, cloud sync, or telemetry. Monitoring starts paused on launch. Existing subfolders are not imported automatically.
 
-### First release (MVP)
+## Run from source
 
-- **Automatic organization:** Sort completed downloads into subfolders such as `Documents`, `Images`, `Videos`, `Installers`, `Archives`, and `Other`.
-- **Download monitoring:** Detect changes in the selected Downloads directory, while avoiding processing files that are still being written.
-- **Review queue:** Move eligible older downloads to an `Expiring Files` review folder, with configurable age thresholds per category.
-- **Keep, move, or discard:** Mark files to keep, move them to a chosen destination, postpone review, or send them to the operating system's Trash / Recycle Bin.
-- **Safe defaults:** Never permanently delete files automatically; avoid overwriting files with the same name.
-- **Activity history:** Record file operations to explain what happened and support undo where possible.
-- **Simple settings:** Configure monitored folders, sorting categories, and review periods.
+Install the .NET 10.0.4xx SDK on Windows, then:
 
-### Later possibilities
-
-- Dry-run previews before applying rules to existing files.
-- Advanced rules based on filenames, sizes, metadata, and document contents.
-- Duplicate detection using file hashes.
-- Storage usage insights and cleanup suggestions.
-- Optional virtual categorization without physically moving files.
-- Cross-platform support and localization.
-
-## Intended workflow
-
-```text
-New download
-     |
-     v
-Detect completion
-     |
-     v
-Classify by file type
-     |
-     v
-Downloads/<Category>/
-     |
-     v
-Age threshold reached?
-     | No               | Yes
-     |                  v
-     |          Expiring Files/
-     |                  |
-     |          User reviews file
-     |                  |
-     |          Keep / Move / Trash
-     v
-Remain in category
+```powershell
+dotnet restore Dowlume/Dowlume.slnx
+dotnet build Dowlume/Dowlume.slnx -c Release
+dotnet test Dowlume/Dowlume.slnx -c Release --filter "Category!=WindowsShell"
+dotnet run --project Dowlume/Dowlume.App -c Release
 ```
 
-The review folder is a **holding area, not a deletion queue**. Files stay there until the user takes action, unless they explicitly enable a different policy in a future version.
+Choose a disposable sample folder in Settings first, then use Preview. The [user guide](docs/USER_GUIDE.md) explains the complete workflow, recovery, and current limits.
 
-## Example folder structure
+## Packages
 
-```text
-Downloads/
-├── Documents/
-├── Images/
-├── Videos/
-├── Installers/
-├── Archives/
-├── Other/
-└── Expiring Files/
-```
+The release script produces a self-contained Windows x64 ZIP and, when Inno Setup is available, a per-user installer. See [packaging instructions](docs/RELEASE_CHECKLIST.md). Locally generated files are in `artifacts/` and are not committed. Public releases require the remaining release gates; do not assume a published binary exists.
 
-Folder names, category mappings, and aging thresholds are planned to be configurable. Dowlume should also track the original category and path of files moved to review.
+## Project
 
-## Proposed tech stack
-
-| Area | Technology |
+| Project | Responsibility |
 | --- | --- |
-| Language | C# / .NET |
-| Desktop UI | Avalonia UI |
-| Local database | SQLite |
-| Filesystem monitoring | `FileSystemWatcher` plus periodic reconciliation |
-| Background processing | `async`/`await` and `System.Threading.Channels` |
-| Testing | xUnit |
-| Initial platform | Windows |
+| `Dowlume.Core` | Domain models, rules, validation, contracts |
+| `Dowlume.Monitoring` | Watcher, queue, readiness, reconciliation scheduling |
+| `Dowlume.Infrastructure` | SQLite, filesystem safety, recovery, Windows integration |
+| `Dowlume.App` | Avalonia MVVM desktop interface |
+| `Dowlume.Tests` | Unit, integration, shell, and headless desktop tests |
 
-## Engineering principles
-
-1. **Protect user data.** No silent permanent deletion, accidental overwrite, or uncontrolled file moves.
-2. **Handle real-world filesystem behavior.** Expect duplicate or missed events, incomplete downloads, locked files, restarts, and rename conflicts.
-3. **Keep operations traceable.** Store enough metadata to explain actions and support safe recovery.
-4. **Stay lightweight.** Monitor and process files in the background without unnecessary CPU usage.
-5. **Separate concerns.** Keep the file monitor, classification engine, lifecycle policies, persistence, and UI independently testable.
-
-## Development status
-
-Dowlume is in the design and planning stage. There are currently no published binaries or installation instructions.
-
-See [ROADMAP.md](ROADMAP.md) for implementation milestones and release criteria.
-
-## Contributing
-
-The contribution process will be defined once the initial project structure and development guidelines are in place. Feedback and design discussions are welcome when the repository opens for collaboration.
+Read [Getting Started](GETTING_STARTED.md), [Architecture](docs/ARCHITECTURE.md), [Contributing](CONTRIBUTING.md), and the [Roadmap](ROADMAP.md). The initial implementation is split across [dependent feature branches](docs/BRANCHES.md).
 
 ## License
 
-A license has not yet been selected. Until one is added, do not assume that the source code is licensed for reuse or redistribution.
+[MIT](LICENSE). Third-party dependencies retain their respective licenses.
