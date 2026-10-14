@@ -8,7 +8,7 @@ Status: the Windows MVP is implemented as a release candidate. Release approval 
 - [x] Constructor-based composition, formatting, structured diagnostics, and CI configuration.
 - [x] Domain state machine and explicit safety requirements.
 - [x] MIT license and contribution conventions.
-- [ ] Hosted GitHub Actions verified on reviewed pull requests.
+- [x] Hosted GitHub Actions build/test/format checks verified for the release candidate.
 
 ## Milestone 1: Safe detection
 
@@ -52,7 +52,7 @@ Status: the Windows MVP is implemented as a release candidate. Release approval 
 - [x] Usage, architecture, contribution, branch, and release documentation.
 - [ ] Clean-machine install/upgrade/uninstall acceptance testing.
 - [ ] Physical cross-volume interruption and constrained Recycle Bin testing.
-- [ ] Review and merge PRs, verify hosted checks, and approve the release.
+- [ ] Review and merge PRs, verify integration checks, and approve the release.
 - [ ] Sign when a certificate is available, publish binaries/checksums, and tag `v0.1.0`.
 
 ## Post-MVP

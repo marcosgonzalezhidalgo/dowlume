@@ -16,7 +16,8 @@ The installer runs without elevation, creates a Start menu shortcut, and retains
 
 ## Before public release
 
-- [ ] Review and merge the dependent PRs; verify hosted GitHub Actions.
+- [x] Verify hosted build, test, and formatting checks for the release-candidate application revision.
+- [ ] Review and merge the dependent PRs; verify checks again after integration.
 - [ ] Install on a clean supported Windows x64 machine without a preinstalled .NET runtime.
 - [ ] Confirm first-run preview, cancellation, pause, tray reopen, and exit with a nontechnical tester.
 - [ ] Test large downloads and a real move between two physical/local volumes, including an interrupted copy.

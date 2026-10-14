@@ -12,4 +12,4 @@ The pre-existing F#-to-C# conversion was preserved in the foundation commit. No 
 
 Each branch is cumulative. Use `git log --oneline --decorate --all` to inspect the exact commits and `git diff <base>..<branch>` for a focused review. The final release branch is the working branch for the complete implementation.
 
-All five topic branches are pushed and have dependent draft PRs. Review them in this order and retarget each child after its prerequisite merges. Keep `main` as the only permanent branch after merging. A release-candidate tag identifies tested source; do not publish a final `v0.1.0` tag until the remaining clean-machine release checklist passes.
+All five topic branches are pushed and have dependent draft PRs. Review them in this order and retarget each child after its prerequisite merges. Keep `main` as the only permanent branch after merging. Tag `v0.1.0-rc.1` identifies tested application revision `9322acc`; do not publish a final `v0.1.0` tag until the remaining clean-machine release checklist passes.
