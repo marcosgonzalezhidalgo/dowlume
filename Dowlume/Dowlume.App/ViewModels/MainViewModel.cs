@@ -19,7 +19,7 @@ public partial class MainViewModel : ObservableObject
     private readonly CancellationTokenSource _shutdown = new();
     private DownloadMonitor? _monitor;
     private AppSettings? _previewSettings;
-    private bool _refreshing;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private Task _activeWork = Task.CompletedTask;
 
     [ObservableProperty] private string _downloadsPath = string.Empty;
@@ -208,33 +208,43 @@ public partial class MainViewModel : ObservableObject
         await RefreshAsync();
     });
 
-    public async Task RefreshAsync()
+    public async Task RefreshAsync(bool skipIfRefreshing = false)
     {
-        if (_refreshing || _shutdown.IsCancellationRequested)
+        if (_shutdown.IsCancellationRequested)
         {
             return;
         }
-        _refreshing = true;
+        if (!await _refreshGate.WaitAsync(skipIfRefreshing ? 0 : Timeout.Infinite))
+        {
+            return;
+        }
         try
         {
-            var snapshot = await Task.Run(() => (Files: _store.GetFiles(), History: _store.GetOperations()));
+            if (_shutdown.IsCancellationRequested)
+            {
+                return;
+            }
+            OperationHistoryQuery query = _historyQuery;
+            var snapshot = await Task.Run(() => (Files: _store.GetFiles(), History: _store.GetOperationHistory(query),
+                AttentionCount: _store.CountOperationsRequiringAttention()));
             TrackedFile? selectedReview = SelectedReview;
-            OperationRecord? selectedOperation = SelectedOperation;
             string root = _store.LoadSettings()?.DownloadsPath ?? DownloadsPath;
             TrackedFile[] files = snapshot.Files.Where(file => PathSafety.IsWithin(root, file.CurrentPath)).ToArray();
             Replace(ReviewFiles, files.Where(file => file.Status == LifecycleStatus.InReview));
             Replace(ManagedFiles, files.Where(file => file.IsManaged || file.Status == LifecycleStatus.Missing));
-            Replace(Activity, snapshot.History.Reverse().Take(200));
+            if (query == _historyQuery)
+            {
+                ShowActivityPage(snapshot.History);
+            }
             Replace(Categories, Enum.GetValues<FileCategory>().Select(category => new CategorySummary(category, files.Count(file => file.IsManaged && file.Category == category))));
             SelectedReview = ReviewFiles.FirstOrDefault(file => file.Id == selectedReview?.Id);
-            SelectedOperation = Activity.FirstOrDefault(operation => operation.Id == selectedOperation?.Id);
             ManagedCount = files.Count(file => file.IsManaged);
             ReviewCount = ReviewFiles.Count;
             AttentionCount = files.Count(file => file.Status == LifecycleStatus.Missing) +
-                snapshot.History.Count(operation => operation.Status is OperationStatus.NeedsAttention or OperationStatus.Pending);
+                snapshot.AttentionCount;
         }
         catch (Exception error) { ShowError(error); }
-        finally { _refreshing = false; }
+        finally { _refreshGate.Release(); }
     }
 
     private AppSettings ReadSettings()
@@ -314,6 +324,8 @@ public partial class MainViewModel : ObservableObject
         await _shutdown.CancelAsync();
         await _activeWork;
         await StopMonitorAsync();
+        await _refreshGate.WaitAsync();
+        _refreshGate.Release();
         _shutdown.Dispose();
     }
 

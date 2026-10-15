@@ -30,6 +30,10 @@ Downloads folders accumulate useful documents, one-off installers, and files tha
 
 There is no automatic permanent deletion, online account, cloud sync, or telemetry. Monitoring starts paused on launch. Existing subfolders are not imported automatically.
 
+Activity now includes searchable history with action/status filters and pagination, so older operations remain accessible. See [finding an earlier action](docs/USER_GUIDE.md#find-an-earlier-action).
+
+Windows x64 remains the current target. macOS and Linux versions are deferred pending native file-safety integrations and validation; see [platform support](docs/PLATFORM_SUPPORT.md).
+
 ## Technologies
 
 **C# · .NET 10 · Avalonia (MVVM) · SQLite · xUnit**

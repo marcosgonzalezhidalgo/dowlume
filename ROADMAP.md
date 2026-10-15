@@ -69,6 +69,12 @@ The [release checklist](docs/RELEASE_CHECKLIST.md) is the detailed acceptance re
 - [x] Usage, architecture, contribution, branch, and release documentation.
 - [x] Merge the five implementation PRs into `main`, preserving commit and PR history.
 
+## Development after the MVP
+
+- [x] Search all recorded operations by filename or path, action, and status.
+- [x] Browse older history in bounded pages while preserving undo checks and the global attention count.
+- [x] Assess [macOS and Linux prerequisites](docs/PLATFORM_SUPPORT.md); native implementations and validation remain deferred.
+
 ## Future work
 
 These are possible directions after the MVP release, without scheduled versions or dates.
@@ -77,8 +83,8 @@ These are possible directions after the MVP release, without scheduled versions 
 - Richer classification rules and virtual organization.
 - Multi-folder simultaneous monitoring.
 - Following external renames and explicitly accepting edited tracked content.
-- Incremental database queries and history pagination for very large folders.
+- Incremental organizer/recovery queries and indexed history searches for very large folders.
 - Optional Windows startup integration.
-- Linux/macOS platform implementations, localization, and broader accessibility review.
+- [Linux/macOS platform implementations](docs/PLATFORM_SUPPORT.md), localization, and broader accessibility review.
 
 No AI classification, cloud synchronization, arbitrary scripts, or permanent automatic deletion is included in this MVP.

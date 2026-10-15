@@ -101,7 +101,15 @@ Undo verifies that the selected operation is the latest completed action on the 
 - Use Windows `IFileOperation` with recycle-only flags and a progress sink that aborts if the item is not marked recyclable.
 - Never empty the user's Recycle Bin or permanently delete managed files.
 
-Path checks reduce ordinary link and rename hazards but are not a security boundary against a hostile same-user process. Cross-volume moves are non-atomic and may require manual reconciliation. Hashing is streamed, so memory use does not grow with file size; processing time does grow with it. The current store reads record collections into memory and is intended for personal download folders, not millions of files.
+Path checks reduce ordinary link and rename hazards but are not a security boundary against a hostile same-user process. Cross-volume moves are non-atomic and may require manual reconciliation. Hashing is streamed, so memory use does not grow with file size; processing time does grow with it. Organizer and recovery queries still read record collections into memory and are intended for personal download folders, not millions of files.
+
+## Activity history queries
+
+Activity reads pages of 50 operations from the existing schema, with parameterized action, status, and source/destination search filters. Only the selected page is deserialized. Counts and page contents share a SQLite read transaction. Literal text matching uses an ordinal, case-insensitive .NET function, including Unicode case comparison, rather than SQL wildcard patterns. See the [Microsoft.Data.Sqlite function API](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/user-defined-functions) and [SQLite JSON extraction](https://www.sqlite.org/json1.html).
+
+Rows follow reverse insertion order, consistent with the journal's existing ordering. Navigation captures the highest row sequence when leaving the live first page, keeping newly inserted operations from shifting older pages. Existing statuses remain current; the page is clamped if filtering leaves fewer results. Searching again, clearing filters, or returning to page one includes new arrivals. Refreshes are serialized, stale filter results are discarded, and shutdown waits for an active read.
+
+The attention count queries all Pending and NeedsAttention entries independently of paging and filters. Undo still consults the complete journal and applies the original safety checks. No database migration or journal pruning is needed. Search and counts still scan JSON records; pagination bounds materialized history, not query time for arbitrarily large profiles. [History tests](../Dowlume/Dowlume.Tests/OperationHistoryTests.cs) cover pagination, concurrent arrivals between reads, updates, literal searches, and filter validation.
 
 ## Diagnostics and references
 

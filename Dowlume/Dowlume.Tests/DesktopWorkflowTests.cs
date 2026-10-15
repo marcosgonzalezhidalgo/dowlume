@@ -15,6 +15,92 @@ namespace Dowlume.Tests;
 public sealed class DesktopWorkflowTests
 {
     [Fact]
+    public async Task ActivitySearchPagingAndUndoWorkWithOlderHistory()
+    {
+        using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await session.Dispatch(async () =>
+        {
+            using var workspace = new TemporaryWorkspace();
+            var settings = new AppSettings { DownloadsPath = workspace.Downloads };
+            var store = new SqliteStateStore(workspace.Database);
+            store.SaveSettings(settings);
+            var organizer = new DownloadOrganizer(store, new SafeFileMover(), new FileReadiness(TimeSpan.Zero, TimeSpan.Zero), new NoRecycle());
+            string source = workspace.CreateFile("Older report.pdf");
+            await organizer.OrganizeAsync(source, settings);
+            OperationRecord original = Assert.Single(store.GetOperations());
+            for (int index = 0; index < 205; index++)
+            {
+                store.SaveOperation(original with
+                {
+                    Id = Guid.NewGuid(),
+                    SourcePath = Path.Combine(workspace.Downloads, $"other-{index}.pdf"),
+                    Status = OperationStatus.Failed,
+                    Error = "Disposable history fixture."
+                });
+            }
+            var dialogs = new TestDialogs { Confirm = true };
+            var model = new MainViewModel(store, organizer, dialogs, new DiagnosticLog(Path.Combine(workspace.Root, "diagnostics.jsonl")));
+            var window = new MainWindow { DataContext = model };
+            window.Show();
+            try
+            {
+                await model.RefreshAsync();
+                Assert.Equal(50, model.Activity.Count);
+                Assert.True(model.HasNextActivityPage);
+                Guid firstPageId = model.Activity[0].Id;
+                await model.NextActivityPageCommand.ExecuteAsync(null);
+                Assert.True(model.HasPreviousActivityPage);
+                Assert.DoesNotContain(model.Activity, operation => operation.Id == firstPageId);
+                model.SelectedOperation = model.Activity[0];
+                Guid olderPageId = model.SelectedOperation.Id;
+                store.SaveOperation(original with
+                {
+                    Id = Guid.NewGuid(),
+                    Status = OperationStatus.Failed
+                });
+                await model.RefreshAsync();
+                Assert.Equal(olderPageId, model.SelectedOperation?.Id);
+                Assert.Equal(olderPageId, model.Activity[0].Id);
+
+                model.ActivitySearch = "older REPORT";
+                model.SelectedActivityKind = MainViewModel.ActivityKinds.Single(filter => filter.Value == OperationKind.Organize);
+                model.SelectedActivityStatus = MainViewModel.ActivityStatuses.Single(filter => filter.Value == OperationStatus.Completed);
+                await model.SearchActivityCommand.ExecuteAsync(null);
+                Assert.Equal(original.Id, Assert.Single(model.Activity).Id);
+                Assert.False(model.HasPreviousActivityPage);
+                Assert.False(model.HasNextActivityPage);
+                Assert.Null(model.SelectedOperation);
+                model.SelectedOperation = model.Activity[0];
+                await model.UndoCommand.ExecuteAsync(null);
+                Assert.True(File.Exists(source), model.ErrorMessage);
+                Assert.Equal(LifecycleStatus.Kept, Assert.Single(store.GetFiles()).Status);
+
+                model.ActivitySearch = "no such file";
+                await model.SearchActivityCommand.ExecuteAsync(null);
+                Assert.True(model.IsActivityEmpty);
+                Assert.Null(model.SelectedOperation);
+                await model.ClearActivityFiltersCommand.ExecuteAsync(null);
+                Assert.Equal(50, model.Activity.Count);
+                Assert.False(model.IsActivityEmpty);
+                Assert.False(model.HasPreviousActivityPage);
+                Assert.Equal(string.Empty, model.ErrorMessage);
+
+                TabControl tabs = window.GetVisualDescendants().OfType<TabControl>().Single();
+                tabs.SelectedIndex = 3;
+                window.Width = window.MinWidth;
+                window.Height = window.MinHeight;
+                window.UpdateLayout();
+                using var frame = window.CaptureRenderedFrame();
+                Assert.NotNull(frame);
+                Assert.Equal(2, window.GetVisualDescendants().OfType<ComboBox>().Count(combo => combo.IsEffectivelyVisible));
+            }
+            finally { window.Close(); }
+            return true;
+        }, timeout.Token);
+    }
+
+    [Fact]
     public async Task PreviewConsentMonitoringAndReviewWorkThroughTheDesktop()
     {
         using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));

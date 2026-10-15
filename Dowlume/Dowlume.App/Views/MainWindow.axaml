@@ -153,12 +153,23 @@
         </Grid>
       </TabItem>
       <TabItem Header="Activity">
-        <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="0,20,0,0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="0,20,0,0">
           <StackPanel Spacing="8" Margin="0,0,0,16">
             <TextBlock Text="A clear record of every action" Classes="heading" />
-            <TextBlock Text="The latest 200 operations. Select one to inspect its paths or undo an eligible move." Classes="muted" />
+            <TextBlock Text="Browse all recorded actions, newest first, across your saved folders. Select an action to inspect its paths." TextWrapping="Wrap" Classes="muted" />
           </StackPanel>
-          <ListBox Grid.Row="1" ItemsSource="{Binding Activity}" SelectedItem="{Binding SelectedOperation}">
+          <Grid Grid.Row="1" ColumnDefinitions="*,140,155,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,12" IsEnabled="{Binding IsIdle}">
+            <TextBox Text="{Binding ActivitySearch}" PlaceholderText="Search filenames or paths" AutomationProperties.Name="Search activity filenames or paths">
+              <TextBox.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding SearchActivityCommand}" />
+              </TextBox.KeyBindings>
+            </TextBox>
+            <ComboBox Grid.Column="1" ItemsSource="{Binding ActivityKinds}" SelectedItem="{Binding SelectedActivityKind}" HorizontalAlignment="Stretch" AutomationProperties.Name="Filter activity by action" />
+            <ComboBox Grid.Column="2" ItemsSource="{Binding ActivityStatuses}" SelectedItem="{Binding SelectedActivityStatus}" HorizontalAlignment="Stretch" AutomationProperties.Name="Filter activity by status" />
+            <Button Grid.Column="3" Content="Search / refresh" Command="{Binding SearchActivityCommand}" />
+            <Button Grid.Column="4" Content="Clear" Command="{Binding ClearActivityFiltersCommand}" />
+          </Grid>
+          <ListBox Grid.Row="2" ItemsSource="{Binding Activity}" SelectedItem="{Binding SelectedOperation}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="core:OperationRecord">
                 <Grid ColumnDefinitions="160,*,130">
@@ -169,14 +180,20 @@
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <Border Grid.Row="2" Classes="card" Margin="0,12,0,0" Padding="12">
+          <TextBlock Grid.Row="2" Text="No operations match. Try another search or clear the filters." IsVisible="{Binding IsActivityEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="muted" />
+          <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" Margin="0,12,0,0" IsEnabled="{Binding IsIdle}">
+            <Button Content="Previous" Command="{Binding PreviousActivityPageCommand}" IsEnabled="{Binding HasPreviousActivityPage}" />
+            <TextBlock Grid.Column="1" Text="{Binding ActivityPageLabel}" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="muted" />
+            <Button Grid.Column="2" Content="Next" Command="{Binding NextActivityPageCommand}" IsEnabled="{Binding HasNextActivityPage}" />
+          </Grid>
+          <Border Grid.Row="4" Classes="card" Margin="0,12,0,0" Padding="12">
             <StackPanel Spacing="4">
               <SelectableTextBlock Text="{Binding SelectedOperation.SourcePath}" TextWrapping="Wrap" />
               <SelectableTextBlock Text="{Binding SelectedOperation.DestinationPath}" TextWrapping="Wrap" />
               <TextBlock Text="{Binding SelectedOperation.Error}" TextWrapping="Wrap" Foreground="#9E361B" />
             </StackPanel>
           </Border>
-          <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="12" Margin="0,12,0,0" IsEnabled="{Binding IsIdle}">
+          <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="12" Margin="0,12,0,0" IsEnabled="{Binding IsIdle}">
             <Button Content="Undo selected action…" Command="{Binding UndoCommand}" />
             <Button Content="Retry interrupted operations" Command="{Binding RetryRecoveryCommand}" />
           </StackPanel>

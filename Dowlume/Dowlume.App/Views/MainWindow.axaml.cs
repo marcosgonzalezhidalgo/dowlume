@@ -19,7 +19,7 @@ public partial class MainWindow : Window
         {
             if (DataContext is MainViewModel model)
             {
-                await model.RefreshAsync();
+                await model.RefreshAsync(skipIfRefreshing: true);
             }
         };
         Opened += async (_, _) =>
