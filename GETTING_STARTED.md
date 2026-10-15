@@ -53,6 +53,6 @@ Read [Architecture](docs/ARCHITECTURE.md) for implementation details and practic
 
 ## Git and release workflow
 
-Use GitHub Flow: one permanent `main` branch, short-lived feature branches, Conventional Commits, and review plus passing checks before merge. The initial implementation follows a [dependent branch stack](docs/BRANCHES.md) because the existing foundation was already unmerged. It does not introduce `develop`.
+Use GitHub Flow: one permanent `main` branch, short-lived feature branches, Conventional Commits, and review plus passing checks before merge. The initial implementation has been merged into `main`; its [PR history and branch policy](docs/BRANCHES.md) explain the dependency order and ongoing workflow.
 
 The implementation milestones are tracked in [ROADMAP.md](ROADMAP.md). Packaging and publication are separate: follow the [release checklist](docs/RELEASE_CHECKLIST.md), including clean-machine testing and hosted CI. Do not mark those complete solely because local tests pass.

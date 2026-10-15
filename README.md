@@ -1,10 +1,14 @@
 # Dowlume
 
+[![Build and test](https://github.com/marcosgonzalezhidalgo/dowlume/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/marcosgonzalezhidalgo/dowlume/actions/workflows/build.yml?query=branch%3Amain)
+
 **Your downloads, under control.**
 
 Dowlume is a local-first Windows desktop application that organizes completed downloads, moves aging files into a review area, and leaves the final decision with you.
 
-**Status:** 0.1.0 release candidate implementation. See [validation](docs/VALIDATION.md) for checks actually performed and the [release checklist](docs/RELEASE_CHECKLIST.md) for publication gates.
+**Status:** The Windows MVP is available on `main` as a 0.1.0 release candidate. See [validation](docs/VALIDATION.md) for completed checks and the [release checklist](docs/RELEASE_CHECKLIST.md) for publication gates.
+
+[User guide](docs/USER_GUIDE.md) · [Developer setup](GETTING_STARTED.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md)
 
 ## What it does
 
@@ -34,7 +38,7 @@ Choose a disposable sample folder in Settings first, then use Preview. The [user
 
 ## Packages
 
-The release script produces a self-contained Windows x64 ZIP and, when Inno Setup is available, a per-user installer. See [packaging instructions](docs/RELEASE_CHECKLIST.md). Locally generated files are in `artifacts/` and are not committed. Public releases require the remaining release gates; do not assume a published binary exists.
+The release script produces a self-contained Windows x64 ZIP and, when Inno Setup is available, a per-user installer. See [packaging instructions](docs/RELEASE_CHECKLIST.md). Locally generated files are in `artifacts/` and are not committed. A published installer is pending completion of the release checklist.
 
 ## Project
 
@@ -46,7 +50,7 @@ The release script produces a self-contained Windows x64 ZIP and, when Inno Setu
 | `Dowlume.App` | Avalonia MVVM desktop interface |
 | `Dowlume.Tests` | Unit, integration, shell, and headless desktop tests |
 
-Read [Getting Started](GETTING_STARTED.md), [Architecture](docs/ARCHITECTURE.md), [Contributing](CONTRIBUTING.md), and the [Roadmap](ROADMAP.md). The initial implementation is split across [dependent feature branches](docs/BRANCHES.md).
+`main` is the default branch and contains the integrated application and documentation. Read [Architecture](docs/ARCHITECTURE.md) for the design and [Git history and branch policy](docs/BRANCHES.md) for the merged implementation PRs and future workflow.
 
 ## License
 

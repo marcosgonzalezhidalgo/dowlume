@@ -52,7 +52,8 @@ Status: the Windows MVP is implemented as a release candidate. Release approval 
 - [x] Usage, architecture, contribution, branch, and release documentation.
 - [ ] Clean-machine install/upgrade/uninstall acceptance testing.
 - [ ] Physical cross-volume interruption and constrained Recycle Bin testing.
-- [ ] Review and merge PRs, verify integration checks, and approve the release.
+- [x] Merge the five implementation PRs into `main`, preserving commit and PR history.
+- [ ] Approve the public release after integration and acceptance checks.
 - [ ] Sign when a certificate is available, publish binaries/checksums, and tag `v0.1.0`.
 
 ## Post-MVP

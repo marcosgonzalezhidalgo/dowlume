@@ -21,6 +21,6 @@ Validation date: 2026-10-14. Environment: Windows 11 x64 (build 26200), .NET SDK
 
 The native shell test leaves only its own uniquely named sample text file in Windows Recycle Bin. It does not empty the bin. Screenshots and generated packages are ignored under `artifacts/`; test reports are ignored under `TestResults/`.
 
-All five implementation branches are pushed with dependent draft PRs. `main` has not been merged without review. The tagged source and locally packaged binaries correspond to application revision `9322acc`; later documentation-only updates record hosted validation.
+On 2026-10-15, implementation PRs #1 through #5 were merged into `main` after their hosted checks passed. The integrated tree at `43992f3` was compared with the tested release branch at `16facb0` and is identical. The tagged source and locally packaged binaries still correspond to application revision `9322acc`; later documentation-only updates record validation and integration history.
 
 The local installer smoke test is not a clean-machine acceptance test. Physical cross-volume interruption, disabled/full Recycle Bin, installer upgrade, release signing, independent review, and public publication remain separate gates in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). These are not claimed as completed by the local automated suite.
