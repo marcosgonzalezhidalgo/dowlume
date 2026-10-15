@@ -1,0 +1,40 @@
+@startuml
+!pragma layout smetana
+!include style.iuml
+title Downloaded File - observation, management, and resolution
+top to bottom direction
+state "Identified candidate" as Identified
+state "Ready candidate" as Ready
+state "Managed file" as Managed {
+  state Organized
+  state InReview
+  state Kept
+  state Snoozed
+  Organized -down-> InReview : Review completes\n[age due]
+  Snoozed --> InReview : Review completes\n[snooze elapsed]
+  InReview -down-> Kept : Keep completes
+  InReview -right-> Snoozed : Snooze completes\n/ defer seven days
+  Organized --> Kept : undo Organize [E]\n/ original location
+  InReview --> Snoozed : undo Review [E]\n/ prior location; +7 days
+  Kept --> InReview : undo Keep [E]
+  Snoozed --> InReview : undo Snooze [E]
+}
+state Moved
+state Recycled
+state Missing
+[*] --> Identified : discover a top-level candidate
+Identified --> Identified : excluded or not ready\n/ leave untouched
+Identified --> Ready : eligible readiness observation
+Ready --> Identified : recheck no longer ready\nor preview content changed
+Ready --> Organized : Organize completes\n[consent covers folder]
+InReview --> Moved : confirmed Move\ncompletes
+InReview --> Recycled : confirmed Recycle\ncompletes
+Moved --> InReview : undo Move [E]
+Managed --> Missing : reconciliation\n[unblocked; file absent]
+legend bottom
+  Candidate states are analytical and transient. Readiness can become stale.
+  Arrows describe completed outcomes, including recovery; failures do not assert a new file state.
+  E = eligible undo: latest matching, unchanged, unblocked action; destination free; not already undone.
+  Missing has no automatic restoration; completed Recycle has no in-app undo.
+endlegend
+@enduml

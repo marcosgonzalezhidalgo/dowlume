@@ -1,0 +1,18 @@
+@startuml
+!pragma layout smetana
+!include style.iuml
+title Initial model - organizing and reviewing downloads
+left to right direction
+class "Downloads Folder" as Folder
+class "Downloaded File" as File
+class Category
+class "Review Area" as Review
+Folder -- File : discovery context
+File -- Category : classification
+Folder -- Review : designated holding area
+note bottom of File
+  Candidate concepts only.
+  Associations are provisional;
+  multiplicities are introduced next.
+end note
+@enduml

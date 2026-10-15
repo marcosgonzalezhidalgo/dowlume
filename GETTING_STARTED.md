@@ -27,7 +27,7 @@ Use a disposable folder for initial UI testing. The real Downloads directory is 
 
 ## Next steps
 
-Follow [First use](docs/USER_GUIDE.md#first-use) for Settings, Preview, consent, and review decisions. Read [Architecture](docs/ARCHITECTURE.md) before changing detection, file operations, or recovery; it defines the safety boundaries and practical filesystem limits.
+Follow [First use](docs/USER_GUIDE.md#first-use) for Settings, Preview, consent, and review decisions. The [domain model](docs/requirements/DOMAIN_MODEL.md) explains the concepts and business rules. Read [Architecture](docs/ARCHITECTURE.md) before changing detection, file operations, or recovery; it defines the safety boundaries and practical filesystem limits.
 
 ## Git and release workflow
 

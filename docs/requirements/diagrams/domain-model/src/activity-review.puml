@@ -1,0 +1,63 @@
+@startuml
+!include style.iuml
+title Review - aging, explicit decisions, and alternative outcomes
+start
+:Consider a managed Downloaded File\nin the selected Downloads Folder;
+if (Unresolved Operation blocks it?) then (yes)
+  :Leave lifecycle unchanged;\nresolve Operation first;
+  stop
+else (no)
+endif
+if (Recorded file exists?) then (yes)
+else (no)
+  :Record Missing;
+  stop
+endif
+if (Already InReview?) then (yes)
+else (no)
+  if (Age or snooze date due?) then (yes)
+    :Check readiness; attempt recorded\nReview move to the Review Area;
+    if (Review completes?) then (yes)
+      :Record InReview;\npreserve firstOrganizedAt;
+    else (no)
+      :Defer if busy or report failed/\nunresolved attempt; process other files;
+      stop
+    endif
+  else (no)
+    :Leave in place;\nKept does not age into review;
+    stop
+  endif
+endif
+:Wait for an explicit decision;\nno deletion deadline;
+if (Decision made?) then (yes)
+else (no)
+  :Remain InReview;
+  stop
+endif
+switch (Decision)
+case (Keep or Snooze)
+  :Target current category folder;\nKeep -> Kept;\nSnooze -> Snoozed for seven days;
+case (Move)
+  :Choose a permitted destination folder;
+  if (Chosen and confirmed?) then (yes)
+    :Intended lifecycle = Moved;
+  else (no)
+    :Remain InReview;
+    stop
+  endif
+case (Recycle)
+  if (Recycling confirmed?) then (yes)
+    :Intended lifecycle = Recycled;\nWindows must permit recycling;
+  else (no)
+    :Remain InReview;
+    stop
+  endif
+endswitch
+:Recheck selection, blocking, readiness,\nand destination; record and attempt\nthe chosen action when valid;
+if (Action and facts confirmed?) then (yes)
+  :Complete Operation; apply lifecycle;\npreserve firstOrganizedAt;
+else (no)
+  :Keep last recorded lifecycle;\nreport failure or uncertainty;\nnever substitute permanent deletion;
+endif
+stop
+@enduml

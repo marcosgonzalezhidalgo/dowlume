@@ -1,0 +1,39 @@
+@startuml
+!include style.iuml
+skinparam maxMessageSize 220
+title Scenario - interrupted organization and evidence-based recovery
+autonumber
+participant "Dowlume\n(domain boundary)" as Dowlume
+participant "Operation\norganizeReport" as Operation
+participant "Recorded source\nD/report.pdf" as Source
+participant "Recorded destination\nD/Documents/report.pdf" as Destination
+participant "Downloaded File\nreport" as File
+note over Operation, File
+  Organize was recorded as Pending before interruption.
+  Its intended after condition says Organized, with fingerprint H-report.
+  A separate tracked file record may not yet exist.
+end note
+[-> Dowlume : retry interrupted operations
+Dowlume -> Operation : examine recorded intent and evidence needed
+Operation --> Dowlume : source, destination, expected content, intended condition
+Dowlume -> Source : inspect presence and content when present
+Source --> Dowlume : observed source facts
+Dowlume -> Destination : inspect presence and content when present
+Destination --> Dowlume : observed destination facts
+alt only destination exists and matches H-report
+  Dowlume -> Operation : confirm Completed with intended after facts
+  Dowlume -> File : recognize Organized at recorded destination
+  note over Operation, File : One logical confirmation; no second move is requested.
+else only source exists and matches H-report
+  Dowlume -> Operation : record Failed: original action did not finish
+  Dowlume -->[ : original action may be retried as a new Operation
+else both exist, neither exists, content differs, or inspection fails
+  Dowlume -> Operation : record NeedsAttention
+  Dowlume -->[ : show locations for inspection; block affected file/path
+  note over Source, Destination : Preserve any existing copies. Do not select one to delete.
+end
+legend bottom
+  D abbreviates the fictional Downloads Folder. Source and destination are location roles, not software components.
+  This scenario concerns Organize. An interrupted Recycle cannot be confirmed from source disappearance alone.
+endlegend
+@enduml

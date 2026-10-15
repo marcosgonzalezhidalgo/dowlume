@@ -1,0 +1,34 @@
+@startuml
+!pragma layout smetana
+!include style.iuml
+title Operation - execution outcome and reconciliation
+top to bottom direction
+state Pending
+state Completed
+state Failed
+state NeedsAttention
+[*] --> Pending : record intended action
+Pending --> Completed : execution confirms\naction and resulting facts
+Pending --> Failed : execution fails\n[source remains; no destination]
+Pending --> NeedsAttention : execution fails\n[outcome uncertain]
+Pending --> Completed : recovery\n[only expected destination]
+Pending --> Failed : recovery\n[only expected source]
+Pending --> NeedsAttention : recovery\n[ambiguous, changed, unreadable]
+NeedsAttention --> Completed : recovery\n[only expected destination]
+NeedsAttention --> Failed : recovery\n[only expected source]
+NeedsAttention --> NeedsAttention : recovery still\ninconclusive
+note bottom of Completed
+  An Undo is a new Operation.
+  This completed record is retained.
+end note
+note bottom of Failed
+  Retrying the original action creates a new Operation.
+  No transition back to Pending for this attempt.
+end note
+legend bottom
+  Expected = content matches the recorded fingerprint. Recovery does not move or delete copies.
+  Recycle has no destination location: an intact expected source permits Failed;
+  absence of the source remains NeedsAttention, not proof of recycling.
+  Cancellation before recording creates no Operation. Unresolved attempts block the affected file/path.
+endlegend
+@enduml

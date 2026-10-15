@@ -1,0 +1,79 @@
+@startuml
+!pragma layout smetana
+!include style.iuml
+title Object snapshot - report awaiting review on 2026-10-15
+top to bottom direction
+object "<u>policy : Organization Policy</u>" as Policy {
+  excludedExtensions = { .bak }
+}
+object "<u>downloads : Downloads Folder</u>" as Folder {
+  location = C:/Dowlume-Demo/Downloads
+}
+object "<u>documents : Category</u>" as Category {
+  name = Documents
+}
+object "<u>documentRule : Category Rule</u>" as Rule {
+  categoryFolderName = Documents
+  matchingExtensions = { .pdf, .txt }
+  reviewAfterDays = 30
+}
+object "<u>holdingArea : Review Area</u>" as Review {
+  name = Expiring Files
+}
+object "<u>report : Downloaded File</u>" as File {
+  name = report.pdf
+  originalLocation = D/report.pdf
+  recordedLocation = D/Expiring Files/report.pdf
+  firstOrganizedAt = 2026-09-01 09:00Z
+  lifecycle = InReview
+  expectedContent = H-report
+  snoozedUntil = absent
+}
+object "<u>organizeReport : Operation</u>" as Organize {
+  kind = Organize
+  status = Completed
+  recordedAt = 2026-09-01 09:00Z
+  sourceLocation = D/report.pdf
+  destinationLocation = D/Documents/report.pdf
+}
+object "<u>reviewReport : Operation</u>" as ReviewOp {
+  kind = Review
+  status = Completed
+  recordedAt = 2026-10-15 09:00Z
+  sourceLocation = D/Documents/report.pdf
+  destinationLocation = D/Expiring Files/report.pdf
+}
+object "<u>beforeReview : File Condition</u>" as Before {
+  phase = Before
+  location = D/Documents/report.pdf
+  category = Documents
+  lifecycle = Organized
+  firstOrganizedAt = 2026-09-01 09:00Z
+  expectedContent = H-report
+  snoozedUntil = absent
+}
+object "<u>afterReview : File Condition</u>" as After {
+  phase = IntendedAfter
+  location = D/Expiring Files/report.pdf
+  category = Documents
+  lifecycle = InReview
+  firstOrganizedAt = 2026-09-01 09:00Z
+  expectedContent = H-report
+  snoozedUntil = absent
+}
+Policy -- Folder : selects
+Policy *-- Rule : configures
+Rule -- Category : defines treatment for
+Folder -- Review : designates
+Folder -- File : discovery context of
+Category -- File : recorded classification of
+File -- Organize : subject of
+File -- ReviewOp : subject of
+ReviewOp *-- Before : records conditions
+ReviewOp *-- After : records conditions
+legend bottom
+  Partial object diagram: five other category/rule pairs and Organize's after condition are omitted.
+  No current Preview exists. D abbreviates the fictional Downloads location; H-report is a symbolic fingerprint.
+  The file became due on October 1. A later reconciliation on October 15 completed its Review operation.
+endlegend
+@enduml
