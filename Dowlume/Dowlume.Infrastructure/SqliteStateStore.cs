@@ -42,6 +42,51 @@ public sealed class SqliteStateStore : IStateStore
     public IReadOnlyList<TrackedFile> GetFiles() => ReadAll<TrackedFile>("SELECT payload FROM files ORDER BY rowid;");
     public IReadOnlyList<OperationRecord> GetOperations() => ReadAll<OperationRecord>("SELECT payload FROM operations ORDER BY rowid;");
 
+    public OperationHistoryPage GetOperationHistory(OperationHistoryQuery query)
+    {
+        query.Validate();
+        using SqliteConnection connection = Open();
+        connection.CreateFunction("contains_text", (string? value, string text) =>
+            value?.Contains(text, StringComparison.OrdinalIgnoreCase) == true, isDeterministic: true);
+        // Count, boundary, and rows must describe the same committed journal snapshot.
+        using SqliteTransaction transaction = connection.BeginTransaction(deferred: true);
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT COALESCE(MAX(rowid), 0) FROM operations;";
+        long boundary = query.ThroughSequence ?? (long)command.ExecuteScalar()!;
+        const string filter = """
+            FROM operations
+            WHERE rowid <= $boundary
+              AND ($kind IS NULL OR json_extract(payload, '$.Kind') = $kind)
+              AND ($status IS NULL OR json_extract(payload, '$.Status') = $status)
+              AND ($search = '' OR contains_text(json_extract(payload, '$.SourcePath'), $search)
+                                OR contains_text(json_extract(payload, '$.DestinationPath'), $search))
+            """;
+        command.Parameters.AddWithValue("$boundary", boundary);
+        command.Parameters.AddWithValue("$kind", query.Kind is { } kind ? (int)kind : DBNull.Value);
+        command.Parameters.AddWithValue("$status", query.Status is { } status ? (int)status : DBNull.Value);
+        command.Parameters.AddWithValue("$search", query.SearchText.Trim());
+        command.CommandText = "SELECT COUNT(*) " + filter;
+        int totalCount = checked((int)(long)command.ExecuteScalar()!);
+        int pageCount = totalCount == 0 ? 1 : (totalCount - 1) / query.PageSize + 1;
+        int pageNumber = Math.Min(query.PageNumber, pageCount);
+        command.Parameters.AddWithValue("$limit", query.PageSize);
+        command.Parameters.AddWithValue("$offset", (long)(pageNumber - 1) * query.PageSize);
+        command.CommandText = "SELECT payload " + filter + " ORDER BY rowid DESC LIMIT $limit OFFSET $offset;";
+        List<OperationRecord> items = ReadRecords<OperationRecord>(command);
+        return new OperationHistoryPage(items, totalCount, pageNumber, query.PageSize, boundary);
+    }
+
+    public int CountOperationsRequiringAttention()
+    {
+        using SqliteConnection connection = Open();
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM operations WHERE json_extract(payload, '$.Status') IN ($pending, $attention);";
+        command.Parameters.AddWithValue("$pending", (int)OperationStatus.Pending);
+        command.Parameters.AddWithValue("$attention", (int)OperationStatus.NeedsAttention);
+        return checked((int)(long)command.ExecuteScalar()!);
+    }
+
     public void SaveFile(TrackedFile file)
     {
         using SqliteConnection connection = Open();
@@ -82,6 +127,11 @@ public sealed class SqliteStateStore : IStateStore
         using SqliteConnection connection = Open();
         using SqliteCommand command = connection.CreateCommand();
         command.CommandText = query;
+        return ReadRecords<T>(command);
+    }
+
+    private static List<T> ReadRecords<T>(SqliteCommand command)
+    {
         using SqliteDataReader reader = command.ExecuteReader();
         var result = new List<T>();
         while (reader.Read())
