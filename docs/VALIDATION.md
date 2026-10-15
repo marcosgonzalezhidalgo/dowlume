@@ -1,5 +1,24 @@
 # Local validation record
 
+## 2026-10-16: Searchable activity history
+
+Environment: Windows x64, .NET SDK 10.0.401. Application revision: `ce28fda`. This change extends Activity beyond the former 200-entry display limit; the tagged release candidate and existing local packages are unchanged.
+
+| Check | Result |
+| --- | --- |
+| Release build and automated suite | `dotnet test Dowlume/Dowlume.slnx -c Release --no-restore --filter "Category!=WindowsShell"` passed all 54 tests, with no failures or skips. |
+| History storage | All 251 fixture entries are reachable without duplication; paging survives reopening the database and new arrivals between reads. Updated statuses keep their journal position. |
+| Search and counts | Unicode case comparison, literal SQL/wildcard characters, source/destination paths, null destinations, combined filters, empty results, page clamping, invalid inputs, and independent attention counts covered. |
+| Desktop workflow | Browse older pages, retain selection during refresh/new arrivals, search an action older than 200 entries, undo it through the existing safety checks, clear filters, and render the new controls. |
+| Activity screenshots | Fictional-data renderer completed successfully. Activity inspected at 1120 × 820 and 880 × 680; normal-size capture committed in [images](images/README.md). |
+| Formatting and whitespace | `dotnet format --verify-no-changes --no-restore` passed for the solution and screenshot renderer; `git diff --check` passed. |
+| Dependency audit | `dotnet list Dowlume/Dowlume.slnx package --vulnerable --include-transitive` reported no vulnerable packages from configured sources. |
+| Documentation | Local Markdown file/image targets checked; user guide, architecture, roadmap, and [platform assessment](PLATFORM_SUPPORT.md) updated. |
+
+Pagination uses schema version 1 without migrating or deleting history. Counts and search still scan journal JSON; organizer/recovery queries still load complete collections. This is a bounded history display, not a claim of million-file scalability.
+
+Native recycle and installer code were not changed or revalidated in this increment. Clean-machine, physical cross-volume, and remaining release acceptance gates stay open. macOS and Linux ports are deferred until their native adapters and platform safety checks are implemented and validated.
+
 ## 2026-10-15: Domain-model documentation
 
 Scope: the [domain model](requirements/DOMAIN_MODEL.md), its UML sources and SVGs, documentation links, and a standalone rendering script. Application source is unchanged from `a4b1c9a`. The model was checked against the current implementation and existing tests; no new application acceptance results are claimed.

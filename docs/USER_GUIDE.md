@@ -48,6 +48,18 @@ Review is a holding area. There is no automatic deletion deadline.
 
 *Select a file to decide what happens next. Nothing is deleted automatically.*
 
+## Find an earlier action
+
+**Activity** includes the complete journal for the current application profile, including previously selected Downloads folders. Operations appear in reverse recording order, in pages of 50.
+
+Enter part of a filename or source/destination path, choose an action and status if needed, then select **Search / refresh** or press Enter in the search box. Search ignores letter case, including accented characters, and treats characters such as `%` and `_` literally. **Clear** removes all filters and returns to the newest page.
+
+Use **Previous** and **Next** to browse older entries. The first page receives newly recorded operations during normal refreshes. Older pages exclude new arrivals so monitoring does not shift your position; return to the first page or use **Search / refresh** to include them. Existing operation statuses still update, so a filtered result can shrink after recovery. Selection is retained only while that operation remains on the displayed page.
+
+![Activity showing search, action/status filters, pagination, and the selected operation's paths](images/activity.png)
+
+The Overview attention count always includes all Pending and NeedsAttention operations, plus missing files in the selected folder. Activity filters do not reduce that count. Select **Pending** or **Needs attention** in the status filter to inspect those operations.
+
 ## Undo and recovery
 
 Select a completed operation in **Activity** and choose **Undo selected action**. Undo requires unchanged file content, an available original location, and no later completed action on the same file. Undoing initial organization returns the file to the root and marks it Kept, preventing immediate reorganization. Undoing an age-based review move returns the file to its category and snoozes it for seven days, so the next scan does not immediately move it back. Recycle actions are restored through Windows Recycle Bin, not the app.

@@ -36,14 +36,33 @@ internal static class Program
                 var store = new SqliteStateStore(Path.Combine(profile, "state.db"));
                 store.SaveSettings(settings);
                 string[] names = ["Annual report.pdf", "Coast photo.jpg", "Demo recording.mp4", "Design assets.zip", "Editor setup.msi", "Project notes.txt"];
+                var reviews = new List<OperationRecord>();
                 foreach (string name in names)
                 {
                     CategoryRule rule = FileClassifier.Classify(name, settings);
                     bool review = rule.Category is FileCategory.Archives or FileCategory.Installers;
-                    store.SaveFile(new TrackedFile(Guid.NewGuid(), Path.Combine(settings.DownloadsPath, name),
+                    var file = new TrackedFile(Guid.NewGuid(), Path.Combine(settings.DownloadsPath, name),
                         Path.Combine(settings.DownloadsPath, review ? AppSettings.ReviewFolderName : rule.FolderName, name),
                         rule.Category, new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero),
-                        review ? LifecycleStatus.InReview : LifecycleStatus.Organized, "demo-content-hash"));
+                        review ? LifecycleStatus.InReview : LifecycleStatus.Organized, "demo-content-hash");
+                    store.SaveFile(file);
+                    TrackedFile organized = file with
+                    {
+                        CurrentPath = Path.Combine(settings.DownloadsPath, rule.FolderName, name),
+                        Status = LifecycleStatus.Organized
+                    };
+                    store.SaveOperation(new OperationRecord(Guid.NewGuid(), OperationKind.Organize, OperationStatus.Completed,
+                        file.FirstSeenUtc, null, organized, file.OriginalPath, organized.CurrentPath));
+                    if (review)
+                    {
+                        reviews.Add(new OperationRecord(Guid.NewGuid(), OperationKind.Review, OperationStatus.Completed,
+                            file.FirstSeenUtc.AddDays(14), organized, file, organized.CurrentPath, file.CurrentPath));
+                    }
+                }
+
+                foreach (OperationRecord review in reviews)
+                {
+                    store.SaveOperation(review);
                 }
 
                 var organizer = new DownloadOrganizer(store, new SafeFileMover(), new FileReadiness(), new NoRecycle());
@@ -71,6 +90,12 @@ internal static class Program
                     model.SelectedReview = model.ReviewFiles[0];
                     model.StatusMessage = "Monitoring paused. Preview again when you are ready to resume.";
                     Capture(2, "review.png");
+
+                    model.SelectedOperation = model.Activity.First(operation => operation.Kind == OperationKind.Review);
+                    Capture(3, "activity.png");
+                    window.Width = window.MinWidth;
+                    window.Height = window.MinHeight;
+                    Capture(3, "activity-compact.png");
 
                     void Capture(int index, string name)
                     {
