@@ -28,6 +28,14 @@ Set `DOWLUME_TEST_SCREENSHOTS` to an output directory when running the desktop t
 
 `main` is the only permanent branch. Normally create a short-lived topic branch from current `main`, make focused Conventional Commits, and submit a pull request. Merge after review and passing CI. Do not force-push shared history.
 
-The initial implementation uses a dependent branch stack because its foundation was already on `chore/project-setup`. Review and merge from the bottom upward; retarget the next PR to `main` after its prerequisite merges. The final branch contains the complete application. See [the branch handoff](docs/BRANCHES.md). This is a temporary bootstrap sequence, not a new permanent integration branch.
+The initial implementation was merged through five dependent PRs. Their original commits and merge history are preserved; see [Git history and branch policy](docs/BRANCHES.md). New work starts from the current `main`:
+
+```powershell
+git switch main
+git pull --ff-only origin main
+git switch -c feature/describe-the-change
+```
+
+After validation, commit and push the topic branch, open a PR into `main`, and merge after review and passing checks. Delete the merged branch, then synchronize local `main` with another fast-forward pull. Use merge commits when preserving a dependent branch stack; ordinary topic PRs may be squashed if their final commit clearly describes the complete change.
 
 Meaningful safety tests are required for changed file-operation behavior. Do not add tests that only mirror property getters or implementation details. Keep all release checkboxes tied to observed evidence.
