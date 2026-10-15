@@ -10,7 +10,44 @@
 | Dowlume.App | Avalonia views, view models, dialogs, tray behavior, constructor-based composition and shutdown. |
 | Dowlume.Tests | Unit, disposable-filesystem integration, native shell, and headless desktop workflow tests. |
 
-The existing solution layout is retained instead of moving every project into new `src` and `tests` directories. This avoids unrelated churn while keeping the documented separation of concerns.
+## Component diagram
+
+Solid arrows show project references; dotted arrows show runtime access.
+
+```mermaid
+flowchart LR
+    App["Dowlume.App<br/>Avalonia views and view models"] --> Core["Dowlume.Core<br/>Models, rules, contracts"]
+    App --> Monitoring["Dowlume.Monitoring<br/>Watcher, queue, readiness"]
+    App --> Infrastructure["Dowlume.Infrastructure<br/>Organizer, persistence, recovery"]
+    Monitoring --> Core
+    Infrastructure --> Core
+    Infrastructure -.-> Database[("SQLite<br/>Settings, files, journal")]
+    Infrastructure -.-> Disk["Local filesystem<br/>Category and review folders"]
+    Infrastructure -.-> Shell["Windows shell<br/>Recycle Bin"]
+    Monitoring -.-> Disk
+```
+
+`Dowlume.Tests` references all four projects for domain, integration, monitoring, and headless desktop checks. The application composition root supplies a `DownloadOrganizer` callback to the monitor; Monitoring does not reference Infrastructure.
+
+## Engineering challenges
+
+### Detecting completed downloads
+
+A Created or Changed event can arrive while the browser still writes a file, and watcher events can be missed. `DownloadMonitor` treats events as hints, deduplicates work in a bounded channel, and uses startup and periodic scans to rediscover candidates. `FileReadiness` checks a three-second write-age margin, stable size and last-write time across two observations 300 ms apart, and an exclusive-open probe. Browser partial-download extensions are excluded.
+
+This trades a small delay for conservative detection; it cannot prove that another application will never reopen the file. [Monitoring tests](../Dowlume/Dowlume.Tests/MonitoringTests.cs) exercise incomplete downloads, rename, locked files, burst handling, and restart discovery.
+
+### Protecting files when operations fail
+
+Another file may already occupy a destination, or a source may change after preview. `SafeFileMover` verifies the expected SHA-256 under a read handle that denies new writers, uses no-overwrite moves, and verifies the result. The organizer selects numeric suffixes for name collisions and journals before acting. Cancellation is honored before journal creation; once journaled, the operation finishes or records its failure before shutdown completes.
+
+Cross-volume moves remain non-atomic. If an interruption leaves conflicting copies, recovery preserves them for inspection instead of choosing one to delete. [Safety tests](../Dowlume/Dowlume.Tests/SafetyTests.cs) and [organizer tests](../Dowlume/Dowlume.Tests/OrganizerTests.cs) cover collisions, changed content, cancellation, and interrupted operations; physical cross-volume acceptance remains a [release gate](RELEASE_CHECKLIST.md).
+
+### Reconciling SQLite with the filesystem
+
+A filesystem move and a SQLite commit cannot form one shared transaction. The organizer first persists a Pending operation with before/after snapshots and paths. After a verified move, `SqliteStateStore.CompleteOperation` commits the tracked record and Completed journal status together. Recovery compares the recorded paths and content hashes with disk before completing or failing an interrupted operation.
+
+For example, a crash after moving `report.pdf` but before the database commit leaves a Pending entry. If only the matching destination exists, recovery completes the database state; if both copies exist, it records NeedsAttention and blocks automatic actions on that file. [Recovery coverage](../Dowlume/Dowlume.Tests/OrganizerTests.cs) includes failures before and after the move and ambiguous copies. See [Operation journal and recovery](#operation-journal-and-recovery) for undo and recycle limits.
 
 ## Processing
 

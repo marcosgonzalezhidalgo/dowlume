@@ -1,12 +1,14 @@
 # Using Dowlume
 
-Dowlume 0.1.0 is a Windows desktop download organizer. Start with a disposable folder containing copies of sample files before choosing your real Downloads folder.
+Dowlume is a Windows desktop download organizer. Version 0.1.0 is currently a release candidate; public release packages are pending. Start with a disposable folder containing copies of sample files before choosing your real Downloads folder.
 
 ## Install and start
 
-Run `Dowlume-0.1.0-win-x64-setup.exe`. Installation is per user and does not require administrator privileges. Alternatively, extract the complete portable ZIP and run `Dowlume.App.exe`; do not move the executable out of its accompanying files. The .NET runtime is included.
+When a release package is available, download the installer or portable ZIP from [GitHub Releases](https://github.com/marcosgonzalezhidalgo/dowlume/releases). Until then, Dowlume can be [built and run from source](../GETTING_STARTED.md).
 
-The initial packages are unsigned. Only use a package from a source you trust and compare its SHA-256 checksum with the accompanying `SHA256SUMS.txt`.
+For a downloaded or locally built package, run the setup executable (for example, `Dowlume-0.1.0-win-x64-setup.exe`). Installation is per user and does not require administrator privileges. Alternatively, extract the complete portable ZIP and run `Dowlume.App.exe`; do not move the executable out of its accompanying files. The .NET runtime is included.
+
+Current locally built packages are unsigned; release signing is still a publication decision. Only use a package from a source you trust and compare its SHA-256 checksum with the accompanying `SHA256SUMS.txt`.
 
 ## First use
 
@@ -15,6 +17,14 @@ The initial packages are unsigned. Only use a package from a source you trust an
 3. Open **Preview** and select **Refresh preview**. This step does not move files or create category folders.
 4. Review the proposed destinations, then select **Organize and monitor** and confirm. Consent covers previewed files, future arrivals, and unfinished files when they become ready.
 5. Check **Overview** and **Activity** to see what happened.
+
+![Preview showing six sample downloads and their proposed category folders](images/classification.png)
+
+*Preview shows the destination before you consent. All screenshots use the real views with fictional demonstration data; [capture details](images/README.md).*
+
+![Overview showing managed files, category counts, and the number awaiting review](images/overview.png)
+
+*Overview brings together category counts, tracked files, and items that need your attention.*
 
 Only files directly inside the selected folder are discovered. Existing subfolders are not imported or rearranged. Category folders and `Expiring Files` are created when needed. Name collisions receive a numeric suffix; existing files are never overwritten.
 
@@ -33,6 +43,10 @@ Select a file in **Review**:
 - **Show in Explorer:** inspect the selected file without executing it.
 
 Review is a holding area. There is no automatic deletion deadline.
+
+![Review showing a sample archive and installer with Keep, Snooze, Move, and Recycle actions](images/review.png)
+
+*Select a file to decide what happens next. Nothing is deleted automatically.*
 
 ## Undo and recovery
 
