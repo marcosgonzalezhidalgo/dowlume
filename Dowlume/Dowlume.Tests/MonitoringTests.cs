@@ -34,7 +34,10 @@ public sealed class MonitoringTests
         using var workspace = new TemporaryWorkspace();
         var seen = new ConcurrentDictionary<string, byte>();
         var errors = new ConcurrentQueue<Exception>();
-        for (int index = 0; index < 40; index++) { workspace.CreateFile($"file-{index}.pdf"); }
+        for (int index = 0; index < 40; index++)
+        {
+            workspace.CreateFile($"file-{index}.pdf");
+        }
         workspace.CreateFile("incomplete.crdownload");
         var settings = new AppSettings { DownloadsPath = workspace.Downloads };
         await using var monitor = new DownloadMonitor(settings, async (path, token) =>
@@ -73,6 +76,9 @@ public sealed class MonitoringTests
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        while (!condition()) { await Task.Delay(20, timeout.Token); }
+        while (!condition())
+        {
+            await Task.Delay(20, timeout.Token);
+        }
     }
 }

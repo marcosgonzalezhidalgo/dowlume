@@ -10,7 +10,7 @@ using Dowlume.Monitoring;
 
 namespace Dowlume.App.ViewModels;
 
-public partial class MainViewModel : ViewModelBase
+public partial class MainViewModel : ObservableObject
 {
     private readonly IStateStore _store;
     private readonly DownloadOrganizer _organizer;
@@ -54,7 +54,10 @@ public partial class MainViewModel : ViewModelBase
         AppSettings settings = store.LoadSettings() ?? new AppSettings { DownloadsPath = DownloadsFolder.Suggest() };
         DownloadsPath = settings.DownloadsPath;
         ExcludedExtensions = string.Join(", ", settings.ExcludedExtensions);
-        foreach (CategoryRule rule in settings.Categories) { Rules.Add(new CategoryRuleViewModel(rule)); }
+        foreach (CategoryRule rule in settings.Categories)
+        {
+            Rules.Add(new CategoryRuleViewModel(rule));
+        }
     }
 
     partial void OnIsBusyChanged(bool value)
@@ -73,7 +76,11 @@ public partial class MainViewModel : ViewModelBase
     private Task ChooseFolderAsync() => RunAsync(async () =>
     {
         string? folder = await _dialogs.ChooseFolderAsync("Choose your Downloads folder");
-        if (folder is not null) { DownloadsPath = folder; InvalidatePreview(); }
+        if (folder is not null)
+        {
+            DownloadsPath = folder;
+            InvalidatePreview();
+        }
     });
 
     [RelayCommand]
@@ -106,7 +113,10 @@ public partial class MainViewModel : ViewModelBase
             throw new InvalidOperationException("Preview the current settings before starting.");
         }
         if (!await _dialogs.ConfirmAsync("Start organizing downloads?",
-                $"Organize {PreviewItems.Count} previewed files and monitor this folder for completed downloads?\n\n{settings.DownloadsPath}\n\nFuture and currently unfinished downloads will also be organized. Aging files will move to Expiring Files for your review. No files will be deleted automatically.", "Organize and monitor")) { return; }
+                $"Organize {PreviewItems.Count} previewed files and monitor this folder for completed downloads?\n\n{settings.DownloadsPath}\n\nFuture and currently unfinished downloads will also be organized. Aging files will move to Expiring Files for your review. No files will be deleted automatically.", "Organize and monitor"))
+        {
+            return;
+        }
         _store.SaveSettings(settings);
         foreach (PreviewItem item in PreviewItems.ToArray())
         {
@@ -139,8 +149,14 @@ public partial class MainViewModel : ViewModelBase
     {
         TrackedFile file = RequireReviewSelection();
         string? folder = await _dialogs.ChooseFolderAsync("Choose where to move this file");
-        if (folder is null) { return; }
-        if (!await _dialogs.ConfirmAsync("Move file?", $"Move {file.Name} to:\n\n{folder}\n\nDowlume will stop monitoring this file. Existing files will not be overwritten.", "Move file")) { return; }
+        if (folder is null)
+        {
+            return;
+        }
+        if (!await _dialogs.ConfirmAsync("Move file?", $"Move {file.Name} to:\n\n{folder}\n\nDowlume will stop monitoring this file. Existing files will not be overwritten.", "Move file"))
+        {
+            return;
+        }
         await Task.Run(() => _organizer.MoveAsync(file.Id, SavedSettings(), folder, _shutdown.Token));
         await RefreshAsync();
     });
@@ -149,7 +165,10 @@ public partial class MainViewModel : ViewModelBase
     private Task RecycleAsync() => RunAsync(async () =>
     {
         TrackedFile file = RequireReviewSelection();
-        if (!await _dialogs.ConfirmAsync("Send to Recycle Bin?", $"Recycle {file.Name}?\n\nRestore it through Windows Recycle Bin if needed. This action cannot be undone inside Dowlume.", "Send to Recycle Bin")) { return; }
+        if (!await _dialogs.ConfirmAsync("Send to Recycle Bin?", $"Recycle {file.Name}?\n\nRestore it through Windows Recycle Bin if needed. This action cannot be undone inside Dowlume.", "Send to Recycle Bin"))
+        {
+            return;
+        }
         await Task.Run(() => _organizer.RecycleAsync(file.Id, SavedSettings(), _shutdown.Token));
         await RefreshAsync();
     });
@@ -158,7 +177,10 @@ public partial class MainViewModel : ViewModelBase
     private Task UndoAsync() => RunAsync(async () =>
     {
         OperationRecord operation = SelectedOperation ?? throw new InvalidOperationException("Select an action in Activity first.");
-        if (!await _dialogs.ConfirmAsync("Undo this action?", $"Undo {operation.Description}?\n\nThe original location must be available and the file must be unchanged. Undoing initial organization keeps the file in place permanently.", "Undo action")) { return; }
+        if (!await _dialogs.ConfirmAsync("Undo this action?", $"Undo {operation.Description}?\n\nThe original location must be available and the file must be unchanged. Undoing initial organization keeps the file in place permanently. Undoing a review move snoozes the file for seven days.", "Undo action"))
+        {
+            return;
+        }
         await Task.Run(() => _organizer.UndoAsync(operation.Id, SavedSettings(), _shutdown.Token));
         await RefreshAsync();
     });
@@ -188,7 +210,10 @@ public partial class MainViewModel : ViewModelBase
 
     public async Task RefreshAsync()
     {
-        if (_refreshing || _shutdown.IsCancellationRequested) { return; }
+        if (_refreshing || _shutdown.IsCancellationRequested)
+        {
+            return;
+        }
         _refreshing = true;
         try
         {
@@ -198,14 +223,15 @@ public partial class MainViewModel : ViewModelBase
             string root = _store.LoadSettings()?.DownloadsPath ?? DownloadsPath;
             TrackedFile[] files = snapshot.Files.Where(file => PathSafety.IsWithin(root, file.CurrentPath)).ToArray();
             Replace(ReviewFiles, files.Where(file => file.Status == LifecycleStatus.InReview));
-            Replace(ManagedFiles, files.Where(file => file.IsManaged));
+            Replace(ManagedFiles, files.Where(file => file.IsManaged || file.Status == LifecycleStatus.Missing));
             Replace(Activity, snapshot.History.Reverse().Take(200));
             Replace(Categories, Enum.GetValues<FileCategory>().Select(category => new CategorySummary(category, files.Count(file => file.IsManaged && file.Category == category))));
             SelectedReview = ReviewFiles.FirstOrDefault(file => file.Id == selectedReview?.Id);
             SelectedOperation = Activity.FirstOrDefault(operation => operation.Id == selectedOperation?.Id);
-            ManagedCount = ManagedFiles.Count;
+            ManagedCount = files.Count(file => file.IsManaged);
             ReviewCount = ReviewFiles.Count;
-            AttentionCount = snapshot.History.Count(operation => operation.Status is OperationStatus.NeedsAttention or OperationStatus.Pending);
+            AttentionCount = files.Count(file => file.Status == LifecycleStatus.Missing) +
+                snapshot.History.Count(operation => operation.Status is OperationStatus.NeedsAttention or OperationStatus.Pending);
         }
         catch (Exception error) { ShowError(error); }
         finally { _refreshing = false; }
@@ -213,7 +239,14 @@ public partial class MainViewModel : ViewModelBase
 
     private AppSettings ReadSettings()
     {
-        if (IsMonitoring) { throw new InvalidOperationException("Pause monitoring before changing settings or previewing files."); }
+        if (IsMonitoring)
+        {
+            throw new InvalidOperationException("Pause monitoring before changing settings or previewing files.");
+        }
+        if (string.IsNullOrWhiteSpace(DownloadsPath) || !Path.IsPathFullyQualified(DownloadsPath.Trim()))
+        {
+            throw new ArgumentException("Choose an absolute Downloads folder path.");
+        }
         var settings = new AppSettings
         {
             DownloadsPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(DownloadsPath.Trim())),
@@ -230,7 +263,10 @@ public partial class MainViewModel : ViewModelBase
 
     private Task RunAsync(Func<Task> action)
     {
-        if (IsBusy || _shutdown.IsCancellationRequested) { return Task.CompletedTask; }
+        if (IsBusy || _shutdown.IsCancellationRequested)
+        {
+            return Task.CompletedTask;
+        }
         _activeWork = RunGuardedAsync(action);
         return _activeWork;
     }
@@ -239,7 +275,10 @@ public partial class MainViewModel : ViewModelBase
     {
         IsBusy = true;
         ErrorMessage = string.Empty;
-        try { await action(); }
+        try
+        {
+            await action();
+        }
         catch (OperationCanceledException) when (_shutdown.IsCancellationRequested) { }
         catch (Exception error) { ShowError(error); }
         finally { IsBusy = false; }
@@ -262,7 +301,11 @@ public partial class MainViewModel : ViewModelBase
 
     private async Task StopMonitorAsync()
     {
-        if (_monitor is not null) { await _monitor.DisposeAsync(); _monitor = null; }
+        if (_monitor is not null)
+        {
+            await _monitor.DisposeAsync();
+            _monitor = null;
+        }
         IsMonitoring = false;
     }
 
@@ -277,8 +320,14 @@ public partial class MainViewModel : ViewModelBase
     private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> values)
     {
         T[] snapshot = values.ToArray();
-        if (target.SequenceEqual(snapshot)) { return; }
+        if (target.SequenceEqual(snapshot))
+        {
+            return;
+        }
         target.Clear();
-        foreach (T item in snapshot) { target.Add(item); }
+        foreach (T item in snapshot)
+        {
+            target.Add(item);
+        }
     }
 }

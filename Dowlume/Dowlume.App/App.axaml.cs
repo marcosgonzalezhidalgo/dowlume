@@ -2,9 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Dowlume.App.Services;
 using Dowlume.App.ViewModels;
 using Dowlume.App.Views;
-using Dowlume.App.Services;
 using Dowlume.Infrastructure;
 using Dowlume.Monitoring;
 
@@ -42,10 +42,13 @@ public partial class App : Application
                 log.Write("startup_failed", error);
                 desktop.MainWindow = new Window
                 {
-                    Title = "Dowlume — unable to start", Width = 520, Height = 220,
+                    Title = "Dowlume — unable to start",
+                    Width = 520,
+                    Height = 220,
                     Content = new TextBlock
                     {
-                        Margin = new Thickness(28), TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                        Margin = new Thickness(28),
+                        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                         Text = "Dowlume could not open its local data. Another instance may already be running. Close it and try again. If the problem persists, back up your local database before repairing or reinstalling."
                     }
                 };
@@ -68,7 +71,7 @@ public partial class App : Application
         _trayIcon = new TrayIcon
         {
             ToolTipText = "Dowlume — your downloads, under control",
-            Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Dowlume.App/Assets/avalonia-logo.ico"))),
+            Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Dowlume.App/Assets/dowlume.ico"))),
             Menu = menu,
             IsVisible = true
         };

@@ -5,7 +5,10 @@ namespace Dowlume.App.ViewModels;
 
 public partial class CategoryRuleViewModel : ObservableObject
 {
-    public FileCategory Category { get; }
+    public FileCategory Category
+    {
+        get;
+    }
     [ObservableProperty] private string _folderName;
     [ObservableProperty] private string _extensions;
     [ObservableProperty] private int _reviewAfterDays;

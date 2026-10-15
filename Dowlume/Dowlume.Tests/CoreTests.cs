@@ -33,7 +33,10 @@ public sealed class CoreTests
     public void RejectsUnsafeCategoryNames(string name)
     {
         var settings = new AppSettings { DownloadsPath = Path.GetTempPath() };
-        settings.Categories[0] = settings.Categories[0] with { FolderName = name };
+        settings.Categories[0] = settings.Categories[0] with
+        {
+            FolderName = name
+        };
         Assert.Throws<ArgumentException>(settings.Validate);
     }
 }

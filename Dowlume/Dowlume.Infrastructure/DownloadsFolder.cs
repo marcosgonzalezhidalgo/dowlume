@@ -12,7 +12,10 @@ public static class DownloadsFolder
             int result = SHGetKnownFolderPath(ref downloadsId, 0, IntPtr.Zero, out IntPtr path);
             try
             {
-                if (result == 0) { return Marshal.PtrToStringUni(path)!; }
+                if (result == 0)
+                {
+                    return Marshal.PtrToStringUni(path)!;
+                }
             }
             finally { Marshal.FreeCoTaskMem(path); }
         }

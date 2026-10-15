@@ -18,7 +18,10 @@ public sealed class WindowsRecycleBin : IRecycleBin
         {
             try
             {
-                if (!OperatingSystem.IsWindowsVersionAtLeast(6, 2)) { throw new PlatformNotSupportedException(); }
+                if (!OperatingSystem.IsWindowsVersionAtLeast(6, 2))
+                {
+                    throw new PlatformNotSupportedException();
+                }
                 RecycleOnStaThread(path);
                 completion.SetResult();
             }
@@ -26,7 +29,11 @@ public sealed class WindowsRecycleBin : IRecycleBin
             {
                 completion.SetException(error);
             }
-        }) { IsBackground = true, Name = "Dowlume recycle operation" };
+        })
+        {
+            IsBackground = true,
+            Name = "Dowlume recycle operation"
+        };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         return completion.Task;
@@ -36,7 +43,7 @@ public sealed class WindowsRecycleBin : IRecycleBin
     private static void RecycleOnStaThread(string path)
     {
         var operation = (IFileOperation)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("3AD05575-8857-4850-9277-11B85BDB8E09"), throwOnError: true)!)!;
-        object? item = null;
+        IShellItem? item = null;
         try
         {
             Guid shellItemId = new("43826D1E-E718-42EE-BC55-A1E261C37BFE");
@@ -47,23 +54,38 @@ public sealed class WindowsRecycleBin : IRecycleBin
             const uint silent = 0x0004;
             const uint noConfirmation = 0x0010;
             operation.SetOperationFlags(recycleOnly | failEarly | noErrorUi | silent | noConfirmation);
-            operation.DeleteItem(item, IntPtr.Zero);
+            var sink = new RecycleOnlyProgressSink();
+            operation.DeleteItem(item, sink);
             operation.PerformOperations();
             operation.GetAnyOperationsAborted(out bool aborted);
-            if (aborted || File.Exists(path))
+            Marshal.ThrowExceptionForHR(sink.Result);
+            if (aborted || !sink.Recycled || File.Exists(path))
             {
                 throw new IOException("Windows could not recycle this file. No permanent-delete fallback is available.");
             }
         }
         finally
         {
-            if (item is not null) { Marshal.ReleaseComObject(item); }
+            if (item is not null)
+            {
+                Marshal.ReleaseComObject(item);
+            }
             Marshal.ReleaseComObject(operation);
         }
     }
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
-    private static extern int SHCreateItemFromParsingName(string path, IntPtr bindContext, ref Guid interfaceId, [MarshalAs(UnmanagedType.Interface)] out object item);
+    private static extern int SHCreateItemFromParsingName(string path, IntPtr bindContext, ref Guid interfaceId, out IShellItem item);
+
+    [ComImport, Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IShellItem
+    {
+        void BindToHandler(IntPtr context, ref Guid handlerId, ref Guid interfaceId, out IntPtr handler);
+        void GetParent(out IShellItem parent);
+        void GetDisplayName(uint displayName, out IntPtr name);
+        void GetAttributes(uint mask, out uint attributes);
+        void Compare(IShellItem other, uint hint, out int order);
+    }
 
     // Keep the complete native vtable order, including methods not used by this adapter.
     [ComImport, Guid("947AAB5F-0A5C-4C13-B4D6-4BF7836FC9F8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -84,7 +106,7 @@ public sealed class WindowsRecycleBin : IRecycleBin
         void MoveItems(IntPtr items, IntPtr folder);
         void CopyItem(IntPtr item, IntPtr folder, [MarshalAs(UnmanagedType.LPWStr)] string name, IntPtr sink);
         void CopyItems(IntPtr items, IntPtr folder);
-        void DeleteItem([MarshalAs(UnmanagedType.Interface)] object item, IntPtr sink);
+        void DeleteItem(IShellItem item, IFileOperationProgressSink sink);
         void DeleteItems(IntPtr items);
         void NewItem(IntPtr folder, uint attributes, [MarshalAs(UnmanagedType.LPWStr)] string name, [MarshalAs(UnmanagedType.LPWStr)] string template, IntPtr sink);
         void PerformOperations();

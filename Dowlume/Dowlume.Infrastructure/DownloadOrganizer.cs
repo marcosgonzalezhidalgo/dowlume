@@ -19,12 +19,16 @@ public sealed class DownloadOrganizer(
         await _gate.WaitAsync(cancellationToken);
         try
         {
+            RecoverPendingOperations();
             var result = new List<PreviewItem>();
             IReadOnlyList<TrackedFile> tracked = store.GetFiles();
             foreach (string path in Directory.EnumerateFiles(settings.DownloadsPath).Order(StringComparer.OrdinalIgnoreCase))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!CanDiscover(path, settings, tracked) || !await readiness.IsReadyAsync(path, cancellationToken)) { continue; }
+                if (!CanDiscover(path, settings, tracked) || !await readiness.IsReadyAsync(path, cancellationToken))
+                {
+                    continue;
+                }
                 CategoryRule rule = FileClassifier.Classify(path, settings);
                 string destination = PathSafety.AvailableDestination(Path.Combine(settings.DownloadsPath, rule.FolderName), Path.GetFileName(path));
                 result.Add(new PreviewItem(path, destination, rule.Category, mover.Hash(path)));
@@ -39,7 +43,10 @@ public sealed class DownloadOrganizer(
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (!CanDiscover(path, settings, store.GetFiles()) || !await readiness.IsReadyAsync(path, cancellationToken)) { return; }
+            if (!CanDiscover(path, settings, store.GetFiles()) || !await readiness.IsReadyAsync(path, cancellationToken))
+            {
+                return;
+            }
             string hash = mover.Hash(path);
             if (expectedHash is not null && hash != expectedHash)
             {
@@ -59,20 +66,45 @@ public sealed class DownloadOrganizer(
         try
         {
             RecoverPendingOperations();
+            var failures = new List<Exception>();
             foreach (TrackedFile file in store.GetFiles().Where(file => file.IsManaged && PathSafety.IsWithin(settings.DownloadsPath, file.CurrentPath)))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (IsBlocked(file.Id, file.CurrentPath)) { continue; }
-                PathSafety.RequireWithin(settings.DownloadsPath, file.CurrentPath);
-                if (!File.Exists(file.CurrentPath))
+                if (IsBlocked(file.Id, file.CurrentPath))
                 {
-                    store.SaveFile(file with { Status = LifecycleStatus.Missing });
                     continue;
                 }
-                if (!LifecyclePolicy.IsDue(file, settings, _clock.GetUtcNow())) { continue; }
-                if (!await readiness.IsReadyAsync(file.CurrentPath, cancellationToken)) { continue; }
-                string destination = PathSafety.AvailableDestination(Path.Combine(settings.DownloadsPath, AppSettings.ReviewFolderName), file.Name);
-                await ExecuteAsync(OperationKind.Review, file, file with { CurrentPath = destination, Status = LifecycleStatus.InReview }, file.CurrentPath, destination, cancellationToken);
+                try
+                {
+                    PathSafety.RequireWithin(settings.DownloadsPath, file.CurrentPath);
+                    if (!File.Exists(file.CurrentPath))
+                    {
+                        store.SaveFile(file with
+                        {
+                            Status = LifecycleStatus.Missing
+                        });
+                        continue;
+                    }
+                    if (!LifecyclePolicy.IsDue(file, settings, _clock.GetUtcNow()))
+                    {
+                        continue;
+                    }
+                    if (!await readiness.IsReadyAsync(file.CurrentPath, cancellationToken))
+                    {
+                        continue;
+                    }
+                    string destination = PathSafety.AvailableDestination(Path.Combine(settings.DownloadsPath, AppSettings.ReviewFolderName), file.Name);
+                    await ExecuteAsync(OperationKind.Review, file, file with
+                    {
+                        CurrentPath = destination,
+                        Status = LifecycleStatus.InReview
+                    }, file.CurrentPath, destination, cancellationToken);
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { failures.Add(error); }
+            }
+            if (failures.Count > 0)
+            {
+                throw new IOException($"{failures.Count} files could not be reconciled. Other files were processed.", failures[0]);
             }
         }
         finally { _gate.Release(); }
@@ -157,8 +189,24 @@ public sealed class DownloadOrganizer(
             // Undo may read an explicitly chosen external move destination, but must return inside Downloads.
             PathSafety.RequireWithin(settings.DownloadsPath, operation.SourcePath);
             PathSafety.RejectLinks(current.CurrentPath);
-            if (!await readiness.IsReadyAsync(current.CurrentPath, cancellationToken)) { throw new IOException("The file is busy or missing."); }
-            TrackedFile restored = operation.Before ?? current with { CurrentPath = operation.SourcePath, Status = LifecycleStatus.Kept };
+            if (!await readiness.IsReadyAsync(current.CurrentPath, cancellationToken))
+            {
+                throw new IOException("The file is busy or missing.");
+            }
+            TrackedFile restored = operation.Before ?? current with
+            {
+                CurrentPath = operation.SourcePath,
+                Status = LifecycleStatus.Kept
+            };
+            if (operation.Kind == OperationKind.Review)
+            {
+                // Reversing an age-based move must survive the next lifecycle scan.
+                restored = restored with
+                {
+                    Status = LifecycleStatus.Snoozed,
+                    SnoozedUntilUtc = _clock.GetUtcNow().AddDays(7)
+                };
+            }
             await ExecuteAsync(OperationKind.Undo, current, restored, current.CurrentPath, operation.SourcePath, cancellationToken, operation.Id);
         }
         finally { _gate.Release(); }
@@ -167,7 +215,10 @@ public sealed class DownloadOrganizer(
     public async Task RetryRecoveryAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken);
-        try { RecoverPendingOperations(); }
+        try
+        {
+            RecoverPendingOperations();
+        }
         finally { _gate.Release(); }
     }
 
@@ -175,7 +226,10 @@ public sealed class DownloadOrganizer(
     {
         TrackedFile file = store.GetFiles().Single(item => item.Id == fileId);
         PathSafety.RequireWithin(settings.DownloadsPath, file.CurrentPath);
-        if (IsBlocked(file.Id, file.CurrentPath)) { throw new IOException("Resolve this file's interrupted operation in Activity before continuing."); }
+        if (IsBlocked(file.Id, file.CurrentPath))
+        {
+            throw new IOException("Resolve this file's interrupted operation in Activity before continuing.");
+        }
         return file;
     }
 
@@ -203,7 +257,7 @@ public sealed class DownloadOrganizer(
             // Once journaled, finish this operation even if shutdown was requested.
             if (kind == OperationKind.Recycle)
             {
-                if (mover.Hash(source) != after.ContentHash) { throw new IOException("The file changed since it was tracked."); }
+                using FileStream verifiedSource = mover.OpenVerifiedRead(source, after.ContentHash);
                 await recycleBin.RecycleAsync(source);
             }
             else
@@ -218,7 +272,11 @@ public sealed class DownloadOrganizer(
             bool sourceRemains = File.Exists(source);
             bool destinationExists = destination is not null && File.Exists(destination);
             OperationStatus status = sourceRemains && !destinationExists ? OperationStatus.Failed : OperationStatus.NeedsAttention;
-            store.SaveOperation(operation with { Status = status, Error = FriendlyError(error) });
+            store.SaveOperation(operation with
+            {
+                Status = status,
+                Error = FriendlyError(error)
+            });
             throw;
         }
     }
@@ -242,20 +300,36 @@ public sealed class DownloadOrganizer(
                     }
                     if (sourceExists && !destinationExists && mover.Hash(operation.SourcePath) == operation.After.ContentHash)
                     {
-                        store.SaveOperation(operation with { Status = OperationStatus.Failed, Error = "Interrupted before moving. The source is intact; retry the original action." });
+                        store.SaveOperation(operation with
+                        {
+                            Status = OperationStatus.Failed,
+                            Error = "Interrupted before moving. The source is intact; retry the original action."
+                        });
                         continue;
                     }
                 }
                 else if (sourceExists && mover.Hash(operation.SourcePath) == operation.After.ContentHash)
                 {
-                    store.SaveOperation(operation with { Status = OperationStatus.Failed, Error = "Recycling did not finish. The source is intact; retry the action." });
+                    store.SaveOperation(operation with
+                    {
+                        Status = OperationStatus.Failed,
+                        Error = "Recycling did not finish. The source is intact; retry the action."
+                    });
                     continue;
                 }
-                store.SaveOperation(operation with { Status = OperationStatus.NeedsAttention, Error = "Inspect the source and destination in Explorer, then retry recovery. Nothing will be removed automatically." });
+                store.SaveOperation(operation with
+                {
+                    Status = OperationStatus.NeedsAttention,
+                    Error = "Inspect the source and destination in Explorer, then retry recovery. Nothing will be removed automatically."
+                });
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
-                store.SaveOperation(operation with { Status = OperationStatus.NeedsAttention, Error = FriendlyError(error) });
+                store.SaveOperation(operation with
+                {
+                    Status = OperationStatus.NeedsAttention,
+                    Error = FriendlyError(error)
+                });
             }
         }
     }
