@@ -1,5 +1,7 @@
 # Architecture and safety boundaries
 
+The [domain model](requirements/DOMAIN_MODEL.md) explains the conceptual vocabulary, business rules, and UML behavior of the MVP. This document describes the software components and mechanisms that implement that behavior.
+
 ## Project responsibilities
 
 | Project | Responsibility |

@@ -1,0 +1,32 @@
+@startuml
+!pragma layout smetana
+!include style.iuml
+title Intermediate model - policy, classification, and history
+top to bottom direction
+class "Organization Policy" as Policy
+class "Downloads Folder" as Folder
+class "Category Rule" as Rule
+class Category
+class "Downloaded File" as File
+class "Review Area" as Review
+class Operation
+Policy "0..1" -- "1" Folder : selects
+Policy "1" *-- "6" Rule : configures
+Rule "1" -- "1" Category : defines treatment for
+Folder "1" -- "0..*" File : discovery context of
+Folder "1" -- "1" Review : designates
+Category "0..1" -- "0..*" File : recorded classification of
+File "1" -- "0..*" Operation : subject of
+Operation "0..*" --> "0..1" Operation : attempts to undo
+note bottom of Category
+  Exactly six categories in the MVP.
+  One current rule per category.
+  A tracked file has one category;
+  an untracked candidate may have none.
+end note
+note bottom of Folder
+  One configured policy selects one folder.
+  Earlier folders can remain in history.
+  Discovery context is not current containment.
+end note
+@enduml

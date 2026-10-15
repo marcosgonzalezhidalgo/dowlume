@@ -1,5 +1,20 @@
 # Local validation record
 
+## 2026-10-15: Domain-model documentation
+
+Scope: the [domain model](requirements/DOMAIN_MODEL.md), its UML sources and SVGs, documentation links, and a standalone rendering script. Application source is unchanged from `a4b1c9a`. The model was checked against the current implementation and existing tests; no new application acceptance results are claimed.
+
+| Check | Result |
+| --- | --- |
+| PlantUML syntax and generation | All ten sources passed syntax validation and SVG/PNG generation with PlantUML 1.2026.8 and Eclipse Temurin Java 21.0.12.1 on Windows x64. |
+| SVG structure | Every generated file parsed as SVG XML; no embedded scripts or HTML were present. |
+| Visual rendering | All ten final SVGs opened in headless Chrome with an isolated profile and were visually inspected. PlantUML PNG previews and direct SVG rasterization also completed. Labels, multiplicities, branches, and object-instance notation were checked. |
+| Semantic consistency | Reviewed candidate selection, association multiplicities, transient versus tracked facts, the dated object scenario, both lifecycles, decision/undo outcomes, and recovery alternatives against the MVP code. This is an analysis review, not independent domain-expert approval. |
+| Links and scope | Local Markdown links and anchors passed; all ten images and PlantUML sources are linked from the model. No actor, requirements, or use-case specification was added. |
+| Tooling and whitespace | The rendering script executed successfully and passed PowerShell parsing; `git diff --check` passed. |
+
+The [diagram README](requirements/diagrams/domain-model/README.md) records the pinned renderer, checksum, and reproduction command. Tool binaries and visual-review captures remain ignored under `artifacts/`. Runtime, shell, installer, and physical cross-volume tests were not repeated for this documentation-only change; the earlier evidence and remaining release gates are preserved below.
+
 ## 2026-10-15: Documentation and screenshots
 
 Environment: Windows x64, .NET SDK 10.0.401. Application source is unchanged from `40b7537`; this update adds documentation and a standalone screenshot renderer.

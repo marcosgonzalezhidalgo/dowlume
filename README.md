@@ -63,6 +63,7 @@ When a release package is available, download the installer or portable ZIP from
 
 | Document | What you will find |
 | --- | --- |
+| [Domain model](docs/requirements/DOMAIN_MODEL.md) | Conceptual vocabulary, UML structure, file lifecycles, processes, and business rules |
 | [Architecture](docs/ARCHITECTURE.md) | Component diagram, processing flow, recovery, and safety boundaries |
 | [Roadmap](ROADMAP.md) | Completed MVP, remaining release gates, and future ideas |
 | [Validation](docs/VALIDATION.md) | Dated evidence and outstanding acceptance checks |

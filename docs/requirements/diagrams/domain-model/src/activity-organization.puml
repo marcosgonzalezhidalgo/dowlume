@@ -1,0 +1,57 @@
+@startuml
+!include style.iuml
+title Organization - preview, consent, and initial batch
+start
+:Choose a valid Downloads Folder\nand Organization Policy;
+:Reconcile any interrupted Operations;
+:Inspect eligible, ready top-level files;
+:Classify and propose available names;\nremember content in a Preview;
+note right
+  Zero proposals is valid.
+  Preview creates no category folders
+  and moves no new download files.
+end note
+:Inspect Preview and request organization;
+if (Policy still matches Preview?) then (yes)
+else (no)
+  :Request a fresh Preview;
+  stop
+endif
+if (Consent given for this folder?) then (yes)
+else (no)
+  :Leave downloads untouched;\nmonitoring remains paused;
+  stop
+endif
+while (Another Organization Proposal?) is (yes)
+  :Recheck eligibility and readiness;
+  if (Still eligible and ready?) then (yes)
+    if (Content changed since Preview?) then (yes)
+      :Reject stale proposal;\nrequest fresh Preview;
+      stop
+    else (no)
+    endif
+    :Re-evaluate rule and available name;
+    if (Preparation failed or canceled?) then (yes)
+      :Stop startup; no new Operation;
+      stop
+    else (no)
+    endif
+    :Record Organize as Pending;
+    :Attempt verified no-overwrite move;
+    if (Move and facts confirmed?) then (yes)
+      :Complete Operation; record Organized;\nset firstOrganizedAt;
+    else (no)
+      :Record Failed or NeedsAttention;\nreport error; preserve evidence;
+      stop
+    endif
+  else (no)
+    :Skip this candidate for now;
+  endif
+endwhile (no)
+:Start monitoring under the same consent;
+stop
+legend bottom
+  Future and unfinished arrivals use the same per-file rules under this consent, without a new Preview.
+  Background errors are reported; unrelated files can still be processed.
+endlegend
+@enduml

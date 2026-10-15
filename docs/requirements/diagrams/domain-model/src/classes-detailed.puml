@@ -1,0 +1,88 @@
+@startuml
+!pragma layout smetana
+!include style.iuml
+title Detailed model - configured domain and recorded facts
+top to bottom direction
+skinparam nodesep 35
+skinparam ranksep 65
+class "Organization Policy" as Policy {
+  excludedExtensions : Extension [0..*]
+}
+class "Downloads Folder" as Folder {
+  location : FolderLocation
+}
+class "Category Rule" as Rule {
+  categoryFolderName : Text
+  matchingExtensions : Extension [0..*]
+  reviewAfterDays : Integer
+}
+class Category {
+  name : CategoryName
+}
+class "Review Area" as Review {
+  name : Text = "Expiring Files"
+  /location : FolderLocation
+}
+class "Downloaded File" as File {
+  /name : Text
+  originalLocation : FileLocation
+  recordedLocation : FileLocation
+  firstOrganizedAt : Instant [0..1]
+  lifecycle : FileLifecycle [0..1]
+  expectedContent : Fingerprint [0..1]
+  snoozedUntil : Instant [0..1]
+}
+class Preview <<transient>> {
+  policyAtPreview : PolicyValues
+}
+class "Organization Proposal" as Proposal <<transient>> {
+  sourceLocation : FileLocation
+  proposedDestination : FileLocation
+  observedContent : Fingerprint
+}
+class Operation {
+  kind : OperationKind
+  status : OperationStatus
+  recordedAt : Instant
+  sourceLocation : FileLocation
+  destinationLocation : FileLocation [0..1]
+  outcomeNote : Text [0..1]
+}
+class "File Condition" as Condition <<value>> {
+  phase : ConditionPhase
+  location : FileLocation
+  category : CategoryName
+  lifecycle : FileLifecycle
+  firstOrganizedAt : Instant
+  expectedContent : Fingerprint
+  snoozedUntil : Instant [0..1]
+}
+Policy "0..1" -- "1" Folder : selects
+Policy "1" *-- "6" Rule : configures
+Rule "1" -- "1" Category : defines treatment for
+Folder "1" -- "1" Review : designates
+Folder "1" -- "0..*" File : discovery context of
+Category "0..1" -- "0..*" File : recorded classification of
+Policy "1" -- "0..1" Preview : current matching preview
+Preview "1" *-- "0..*" Proposal : presents
+Proposal "0..1" -- "1" File : concerns
+Proposal "0..*" -- "1" Category : proposes
+File "1" -- "0..*" Operation : subject of
+Operation "0..*" --> "0..1" Operation : attempts to undo
+Operation "1" *-- "1..2" Condition : records conditions
+note bottom of Condition
+  Immutable historical values, not a second file.
+  Intended facts do not prove an action completed.
+  Exactly one IntendedAfter; at most one Before.
+  Before is absent for initial organization.
+end note
+note bottom of Review
+  A designated place, not a deletion deadline.
+  The physical folder is created on demand.
+end note
+legend bottom
+  Multiplicities describe one configured profile and its retained file history.
+  / = derived value. [0..1] = optional. No methods or database keys are modeled.
+  Lifecycle and expected content are absent before tracking; see the text for value domains.
+endlegend
+@enduml

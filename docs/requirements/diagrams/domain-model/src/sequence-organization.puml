@@ -1,0 +1,41 @@
+@startuml
+!include style.iuml
+skinparam maxMessageSize 220
+title Scenario - preview, consent, and a name collision
+autonumber
+participant "Dowlume\n(domain boundary)" as Dowlume
+participant "Organization\nPolicy" as Policy
+participant "Downloaded File\nreport.pdf" as File
+participant Preview
+participant "Operation\norganizeReport" as Operation
+[-> Dowlume : request Preview for selected folder
+Dowlume -> File : observe eligibility, readiness, and content
+File --> Dowlume : eligible; ready; fingerprint H-report
+Dowlume -> Policy : classify report.pdf
+Policy --> Dowlume : Documents; category folder Documents
+Dowlume -> Dowlume : observe Documents/report.pdf already occupied
+Dowlume -> Preview : retain proposal: Documents/report (1).pdf\nand fingerprint H-report
+Dowlume -->[ : show proposed destination; no file moved
+[-> Dowlume : accept Organize and monitor\nfor the unchanged policy
+Dowlume -> File : recheck readiness and observed content
+alt content still matches
+  Dowlume -> Dowlume : re-evaluate destination availability
+  create Operation
+  Dowlume -> Operation : record Pending Organize\nwith source and intended after facts
+  Dowlume -> File : move to available Documents/report (1).pdf\nwithout replacing existing content
+  File --> Dowlume : move verified
+  Dowlume -> Operation : confirm Completed and resulting file facts
+  Dowlume -->[ : show Organized; begin monitoring\nafter all preview items are processed
+else content changed after Preview
+  Dowlume -->[ : reject stale proposal; request fresh Preview
+  note over File, Operation
+    No Organize Operation is recorded for the rejected proposal.
+    The source and the existing destination remain untouched.
+  end note
+end
+legend bottom
+  A conceptual scenario: messages express domain observations and commitments, not C# calls.
+  The occupied name is unchanged throughout this example. A new collision would select another suffix.
+  Recovery of earlier operations precedes candidate preview and is omitted here.
+endlegend
+@enduml
