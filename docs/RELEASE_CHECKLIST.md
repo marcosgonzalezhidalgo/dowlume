@@ -4,7 +4,7 @@ Target: Windows x64, version 0.1.0. Local validation is recorded in `VALIDATION.
 
 ## Reproducible packaging
 
-Install the .NET 10.0.4xx SDK and [Inno Setup 6](https://jrsoftware.org/isdl.php), then run:
+Install a .NET SDK from the **10.0.4xx family** ([SDK policy](../GETTING_STARTED.md#requirements)) and [Inno Setup 6](https://jrsoftware.org/isdl.php), then run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Build-Release.ps1
