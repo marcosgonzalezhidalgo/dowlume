@@ -47,6 +47,11 @@ public partial class MainWindow : Window
             return;
         }
         _closing = true;
+        // Closing a pending confirmation returns its default false result before shutdown waits for it.
+        foreach (Window dialog in OwnedWindows.ToArray())
+        {
+            dialog.Close();
+        }
         IsEnabled = false;
         _refreshTimer.Stop();
         if (DataContext is MainViewModel model)

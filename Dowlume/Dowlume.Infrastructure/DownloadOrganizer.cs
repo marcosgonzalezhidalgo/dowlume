@@ -257,8 +257,7 @@ public sealed class DownloadOrganizer(
             // Once journaled, finish this operation even if shutdown was requested.
             if (kind == OperationKind.Recycle)
             {
-                using FileStream verifiedSource = mover.OpenVerifiedRead(source, after.ContentHash);
-                await recycleBin.RecycleAsync(source);
+                await recycleBin.RecycleAsync(source, after.ContentHash);
             }
             else
             {

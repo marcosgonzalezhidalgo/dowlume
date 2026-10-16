@@ -47,7 +47,8 @@ public sealed class DesktopDialogs(Window owner) : IDesktopDialogs
         {
             throw new PlatformNotSupportedException("Explorer is available on Windows.");
         }
-        var start = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
+        string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+        var start = new ProcessStartInfo(explorer) { UseShellExecute = false };
         start.ArgumentList.Add("/select,");
         start.ArgumentList.Add(Path.GetFullPath(path));
         Process.Start(start)?.Dispose();

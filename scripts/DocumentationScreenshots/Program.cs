@@ -133,6 +133,6 @@ internal static class Program
 
     private sealed class NoRecycle : IRecycleBin
     {
-        public Task RecycleAsync(string path) => throw new InvalidOperationException("Documentation rendering cannot recycle files.");
+        public Task RecycleAsync(string path, string expectedHash) => throw new InvalidOperationException("Documentation rendering cannot recycle files.");
     }
 }

@@ -1,5 +1,27 @@
 # Local validation record
 
+## 2026-10-16: Background access, race review, and security scans
+
+Tray/startup implementation: `3218f6a` (PR #12, merged after both hosted workflows passed). File-operation hardening: `eb01156`. All file-operation fixtures were generated for testing. No personal Downloads, host Recycle Bin policy, or VM was modified.
+
+| Check | Result |
+| --- | --- |
+| Regression suite | 72 tests passed: 70 regular tests and two native WindowsShell tests; no failures or skips. Closing during a pending confirmation cancels it without organizing files or hanging shutdown. |
+| Tray regression | Application-level attachment, reopening a hidden/minimized window from both commands, and disposal covered headlessly. Native Windows icon registration and UI-Automation Hide to tray followed by native click delivery also passed. |
+| Windows startup | Default-off behavior, failure feedback, quoted paths, ownership-scoped removal, and unsupported hosts covered. Packaged upgrade retained the fixture startup entry; uninstall removed it. Actual sign-in remains a VM/manual check. |
+| Race conditions | Verified source handles refused writes/renames/replacement; late destination collisions preserved both files; directory leases blocked ancestor renames. Overlapping review actions rejected the stale second decision. |
+| Cross-volume files | A 64 MiB sample and an alternate data stream survived move and undo between the NVMe system volume and a separate SATA disk. Interrupting the 512 MiB worker preserved source/partial copy, marked NeedsAttention, and blocked another move. |
+| Recycling | Ordinary native recycling and changed-content refusal passed. Callback tests cover permanent-delete refusal, changed content, missing recycled destination, disk-full HRESULT, and unconfirmed outcomes. These simulations do not certify disabled/full Windows bin policy. |
+| Dependencies | No vulnerable direct/transitive packages reported by the configured NuGet sources. |
+| Code scan | All .NET security analyzers passed for the solution and both helper projects with warnings treated as errors. SQL statements use a fixed private table selection and parameterized data; native library and Explorer lookup use system locations. |
+| Secrets | Gitleaks 8.30.1 passed for all local Git refs and tracked/unignored source snapshots, with redacted reports. The scanner archive matched its pinned SHA-256. |
+| Packaging | Local portable launch, previous-draft upgrade, running-app refusal, tray restoration, startup registration, graceful exit, uninstall, and fixture/profile preservation passed. |
+| Hyper-V | The host service is running. Repeated host PowerShell `Get-VM` checks returned permission denied; no clean guest or manual VM workflow was validated. |
+
+Reports are retained under `artifacts/security-20261016-final/` and `artifacts/acceptance/`, including `cross-volume-handle-streams.json` and `package-security-20261016.json`. The preliminary package was built with a dirty tree and is not an approved release artifact; rebuild the merged revision and repeat package checks before replacing draft assets. The dedicated security workflow repeats the scans and retains redacted reports.
+
+Security/stability acceptance remains open for clean-guest installation, actual sign-in, manual organization/undo/upgrade/uninstall, disabled/full Recycle Bin policy, and independent first-use/release review. See [security review](SECURITY_REVIEW.md) for scope and residual race limits. Passing scanners does not authorize marking unavailable manual tests complete.
+
 ## 2026-10-16: Windows release hardening
 
 Implementation revision: `d01ae7b`. Environment: Windows 11 Pro x64 build 26200, .NET SDK 10.0.401, Inno Setup 6.7.3. File-operation tests used unique disposable directories; personal Downloads and Recycle Bin settings were not modified. The user confirmed that no clean Windows environment is currently available.

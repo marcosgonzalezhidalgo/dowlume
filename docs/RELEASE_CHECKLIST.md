@@ -18,13 +18,14 @@ Debug symbols, including native PDB assets supplied by NuGet packages, are remov
 
 `BUILD-INFO.json` identifies the source commit, runtime target, build time, signing status, and whether the working tree was dirty. Rebuild from clean, merged `main` before preparing release assets. Do not distribute a dirty-tree build as the approved release. Retain checksums in every acceptance report; changed binaries require affected acceptance checks to be repeated.
 
-The installer runs without elevation, creates application and quick-start Start menu shortcuts, and retains application data on uninstall. It refuses upgrade/uninstall while a Dowlume process is running in the session. Exit the app first; Setup does not force it closed. The ZIP includes the runtime and offline `START-HERE.txt`. Neither package configures automatic startup. The icon is original code-drawn artwork; regenerate it with `scripts/New-AppIcon.ps1`.
+The installer runs without elevation, creates application and quick-start Start menu shortcuts, and retains application data on uninstall. It refuses upgrade/uninstall while a Dowlume process is running in the session. Exit the app first; Setup does not force it closed. The ZIP includes the runtime and offline `START-HERE.txt`. Windows sign-in startup is off by default and can be enabled in Settings; uninstall removes the entry only when it belongs to the installed copy. The icon is original code-drawn artwork; regenerate it with `scripts/New-AppIcon.ps1`.
 
 The [package workflow](../.github/workflows/package.yml) builds candidates and exercises portable startup, installation, running-app guards, and uninstall on a hosted Windows runner. That runner has .NET installed and does not count as clean-machine acceptance. Follow [Windows acceptance](WINDOWS_ACCEPTANCE.md) for the repeatable smoke script, physical-volume harness, manual cases, and tester handoff.
 
 ## Before public release
 
 - [x] Verify hosted build, test, and formatting checks for the release-candidate application revision.
+- [x] Run direct/transitive dependency, .NET security-analyzer, and redacted Git/source secret scans; retain reports and CI checks.
 - [x] Integrate the five implementation PRs into `main` after their hosted checks pass, preserving their commits.
 - [ ] Obtain independent release approval after checking the integrated branch and remaining acceptance results.
 - [ ] Install on a clean supported Windows x64 machine without a preinstalled .NET runtime.

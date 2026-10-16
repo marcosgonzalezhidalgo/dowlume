@@ -30,17 +30,17 @@ public sealed class SqliteStateStore : IStateStore
         command.ExecuteNonQuery();
     }
 
-    public AppSettings? LoadSettings() => ReadAll<AppSettings>("SELECT payload FROM settings;").SingleOrDefault();
+    public AppSettings? LoadSettings() => ReadAll<AppSettings>(StateTable.Settings).SingleOrDefault();
 
     public void SaveSettings(AppSettings settings)
     {
         settings.Validate();
         using SqliteConnection connection = Open();
-        Write(connection, null, "INSERT INTO settings VALUES(1, $payload) ON CONFLICT(id) DO UPDATE SET payload=$payload;", null, settings);
+        Write(connection, null, StateTable.Settings, null, settings);
     }
 
-    public IReadOnlyList<TrackedFile> GetFiles() => ReadAll<TrackedFile>("SELECT payload FROM files ORDER BY rowid;");
-    public IReadOnlyList<OperationRecord> GetOperations() => ReadAll<OperationRecord>("SELECT payload FROM operations ORDER BY rowid;");
+    public IReadOnlyList<TrackedFile> GetFiles() => ReadAll<TrackedFile>(StateTable.Files);
+    public IReadOnlyList<OperationRecord> GetOperations() => ReadAll<OperationRecord>(StateTable.Operations);
 
     public OperationHistoryPage GetOperationHistory(OperationHistoryQuery query)
     {
@@ -122,11 +122,24 @@ public sealed class SqliteStateStore : IStateStore
         return connection;
     }
 
-    private List<T> ReadAll<T>(string query)
+    private List<T> ReadAll<T>(StateTable table)
     {
         using SqliteConnection connection = Open();
         using SqliteCommand command = connection.CreateCommand();
-        command.CommandText = query;
+        switch (table)
+        {
+            case StateTable.Settings:
+                command.CommandText = "SELECT payload FROM settings;";
+                break;
+            case StateTable.Files:
+                command.CommandText = "SELECT payload FROM files ORDER BY rowid;";
+                break;
+            case StateTable.Operations:
+                command.CommandText = "SELECT payload FROM operations ORDER BY rowid;";
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(table));
+        }
         return ReadRecords<T>(command);
     }
 
@@ -142,21 +155,39 @@ public sealed class SqliteStateStore : IStateStore
     }
 
     private static void WriteFile(SqliteConnection connection, SqliteTransaction? transaction, TrackedFile file) =>
-        Write(connection, transaction, "INSERT INTO files VALUES($id, $payload) ON CONFLICT(id) DO UPDATE SET payload=$payload;", file.Id, file);
+        Write(connection, transaction, StateTable.Files, file.Id, file);
 
     private static void WriteOperation(SqliteConnection connection, SqliteTransaction? transaction, OperationRecord operation) =>
-        Write(connection, transaction, "INSERT INTO operations VALUES($id, $payload) ON CONFLICT(id) DO UPDATE SET payload=$payload;", operation.Id, operation);
+        Write(connection, transaction, StateTable.Operations, operation.Id, operation);
 
-    private static void Write<T>(SqliteConnection connection, SqliteTransaction? transaction, string sql, Guid? id, T value)
+    private static void Write<T>(SqliteConnection connection, SqliteTransaction? transaction, StateTable table, Guid? id, T value)
     {
         using SqliteCommand command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = sql;
+        switch (table)
+        {
+            case StateTable.Settings:
+                command.CommandText = "INSERT INTO settings VALUES(1, $payload) ON CONFLICT(id) DO UPDATE SET payload=$payload;";
+                break;
+            case StateTable.Files:
+                command.CommandText = "INSERT INTO files VALUES($id, $payload) ON CONFLICT(id) DO UPDATE SET payload=$payload;";
+                break;
+            case StateTable.Operations:
+                command.CommandText = "INSERT INTO operations VALUES($id, $payload) ON CONFLICT(id) DO UPDATE SET payload=$payload;";
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(table));
+        }
         if (id.HasValue)
         {
             command.Parameters.AddWithValue("$id", id.Value.ToString());
         }
         command.Parameters.AddWithValue("$payload", JsonSerializer.Serialize(value));
         command.ExecuteNonQuery();
+    }
+
+    private enum StateTable
+    {
+        Settings, Files, Operations
     }
 }

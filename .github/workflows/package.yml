@@ -7,6 +7,7 @@ on:
       - 'packaging/**'
       - 'scripts/Build-Release.ps1'
       - 'scripts/Test-WindowsPackage.ps1'
+      - 'scripts/Test-WindowsTray.ps1'
       - '.github/workflows/package.yml'
 permissions:
   contents: read

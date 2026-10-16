@@ -97,8 +97,9 @@ Undo verifies that the selected operation is the latest completed action on the 
 - Reject reparse points in every existing ancestor, including destination paths.
 - Validate category names, reserved Windows names, extension uniqueness, and bounded review periods.
 - Recheck paths before moving; never pass `overwrite: true` for user-file moves.
-- Hold a read handle that denies new writers during hash verification and the move/recycle action.
-- Use Windows `IFileOperation` with recycle-only flags and a progress sink that aborts if the item is not marked recyclable.
+- On Windows, hold a source handle with read/delete access that denies other writers and deleters. Rename that handle without replacement; for another volume, copy through Windows, verify the destination's main-stream hash under a read lock, then mark only the verified source handle for deletion. Windows copying preserves alternate streams.
+- Hold ancestor directory handles without delete sharing while mutating paths to prevent concurrent folder renames. Recheck reparse points after acquiring each handle.
+- Use Windows `IFileOperation` with recycle-only flags and a progress sink that aborts if the item is not marked recyclable or reviewed content changed. Keep a read handle that denies writes throughout recycling; shell deletion requires delete sharing, so the shell handoff is not atomic against a hostile same-user process.
 - Never empty the user's Recycle Bin or permanently delete managed files.
 
 Path checks reduce ordinary link and rename hazards but are not a security boundary against a hostile same-user process. Cross-volume moves are non-atomic and may require manual reconciliation. Hashing is streamed, so memory use does not grow with file size; processing time does grow with it. Organizer and recovery queries still read record collections into memory and are intended for personal download folders, not millions of files.
@@ -118,6 +119,6 @@ The bounded diagnostic log rotates at approximately 1 MB and excludes exception 
 Primary API references used by the implementation:
 
 - [FileSystemWatcher and buffer overflow behavior](https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher?view=net-10.0).
-- [File.Move and cross-volume behavior](https://learn.microsoft.com/en-us/dotnet/api/system.io.file.move?view=net-10.0).
+- [Handle-based rename and disposition](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileinformationbyhandle) and [Windows file copying](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-copyfilew).
 - [Windows file-operation flags](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileoperation-setoperationflags), [pre-delete cancellation](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileoperationprogresssink-predeleteitem), and [transfer flags](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/ne-shobjidl_core-_transfer_source_flags).
 - [Avalonia storage dialogs](https://docs.avaloniaui.net/docs/services/storage/storage-provider) and [headless rendering](https://docs.avaloniaui.net/docs/testing/setting-up-the-headless-platform).

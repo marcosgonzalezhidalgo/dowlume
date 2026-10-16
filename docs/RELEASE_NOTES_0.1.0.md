@@ -9,6 +9,8 @@ Dowlume organizes completed downloads into configurable categories and moves agi
 - Local SQLite storage, no account or telemetry, and no automatic permanent deletion.
 - A self-contained Windows x64 portable ZIP and per-user installer, including an offline quick-start guide.
 - Upgrade and uninstall require the application to exit first. Uninstall retains user files and the local profile.
+- The notification-area icon restores hidden or minimized windows. Windows sign-in startup is opt-in; monitoring still starts paused.
+- Windows moves use verified file handles to resist source replacement and destination collisions. Recycle operations recheck reviewed content before the shell acts.
 
 ## Downloads
 

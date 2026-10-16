@@ -2,6 +2,9 @@
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <ErrorLog Condition="'$(SecurityScanDirectory)' != ''">$(SecurityScanDirectory)/$(MSBuildProjectName).sarif</ErrorLog>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
 </Project>
