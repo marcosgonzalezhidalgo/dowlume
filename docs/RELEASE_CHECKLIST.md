@@ -1,6 +1,6 @@
 # Release validation
 
-Target: Windows x64, version 0.1.0. Local validation is recorded in [Validation](VALIDATION.md). Stable publication is blocked by clean-machine acceptance, native Recycle Bin failure cases, and independent first-use/release review. A GitHub draft or a locally built artifact is not a published stable release.
+Target: Windows x64, version 0.1.0. Local validation is recorded in [Validation](VALIDATION.md). Clean-guest automated package acceptance has passed; stable publication remains blocked by manual acceptance, native Recycle Bin failure cases, and independent first-use/release review. A GitHub draft or a locally built artifact is not a published stable release.
 
 ## Reproducible packaging
 
@@ -28,10 +28,12 @@ The [package workflow](../.github/workflows/package.yml) builds candidates and e
 - [x] Run direct/transitive dependency, .NET security-analyzer, and redacted Git/source secret scans; retain reports and CI checks.
 - [x] Integrate the five implementation PRs into `main` after their hosted checks pass, preserving their commits.
 - [ ] Obtain independent release approval after checking the integrated branch and remaining acceptance results.
-- [ ] Install on a clean supported Windows x64 machine without a preinstalled .NET runtime.
+- [x] Install on a clean supported Windows x64 machine without a preinstalled .NET runtime. The tester reported a passing standard-account guest run on Windows 11 Pro build 26300 for the exact `cf42326` candidate; see [evidence](VALIDATION.md#2026-10-16-clean-guest-package-acceptance).
 - [ ] Confirm first-run preview, cancellation, pause, tray reopen, and exit with a nontechnical tester.
+- [ ] Confirm Windows sign-in startup enabled/disabled behavior and manual wizard reinstall/uninstall in the guest.
 - [x] Test a real move and undo between physical NVMe/SATA volumes and interrupt a 512 MiB copy; verify original/partial-copy preservation, NeedsAttention recovery, and blocked retry.
-- [ ] Verify behavior when Recycle Bin is disabled or full; the source must remain intact.
+- [ ] Resolve the [failed oversized/near-capacity Recycle Bin cases](RECYCLE_CAPACITY_INVESTIGATION.md); preserve originals and existing recovery items. Ordinary restore and disabled-bin refusal passed in the guest, but the capacity gate is explicitly failed.
+- [ ] Complete Windows Recycle Bin restore and the app's manual recycle workflow with fictional files.
 - [x] Test upgrade from the earlier local candidate and uninstall on the development PC; sample user files and the local database remain intact. Clean-machine acceptance remains separate.
 - [x] Record the signing decision: initial candidate artifacts are unsigned, identified by SHA-256 and source commit. No signing certificate is configured; signing can be added before publication if one becomes available.
 - [ ] Publish release notes, checksums, installer, and ZIP; tag approved source as `v0.1.0`.

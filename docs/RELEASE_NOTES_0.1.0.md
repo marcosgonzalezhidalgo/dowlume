@@ -1,6 +1,6 @@
 # Dowlume 0.1.0 — Windows
 
-**Release draft: not approved or published as stable.** Clean-machine acceptance, native Recycle Bin failure cases, and independent first-use/release review remain pending. The artifacts are for acceptance testing until those checks pass.
+**Release draft: not approved or published as stable.** Clean-guest package acceptance passed, but native Recycle Bin capacity tests failed. Do not use Recycle for valuable files. The [capacity investigation](RECYCLE_CAPACITY_INVESTIGATION.md), manual acceptance, and independent first-use/release review block publication. The artifacts remain acceptance-test evidence.
 
 Dowlume organizes completed downloads into configurable categories and moves aging files into Expiring Files for your decision. Preview and confirmation precede organization; monitoring starts paused after every launch.
 

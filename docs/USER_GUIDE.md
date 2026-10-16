@@ -38,6 +38,8 @@ In **Settings**, enable **Start Dowlume when I sign in to Windows** to open this
 
 ## Review files
 
+**Release-candidate limitation:** native Recycle Bin capacity tests failed. Keep valuable files in Review or use Keep/Move; do not use Recycle until the [preservation issue](RECYCLE_CAPACITY_INVESTIGATION.md) is resolved. The behavior below describes the intended workflow, not a validated capacity guarantee.
+
 A file's age starts when Dowlume first organizes it, not from its downloaded or modified timestamp. When its category's review period expires, it moves to `Expiring Files`.
 
 Select a file in **Review**:
@@ -94,7 +96,7 @@ If a tracked file was edited, automatic moves refuse to act on the old content h
 
 ## Current limits
 
-Windows x64 is the release target. Network shares, drive roots, symbolic links, junctions, and cloud placeholder/reparse paths are rejected. Use a fully local folder. The application does not run as a service or start with Windows.
+Windows x64 is the release target. Network shares, drive roots, symbolic links, junctions, and cloud placeholder/reparse paths are rejected. Use a fully local folder. The application does not run as a service. Windows sign-in startup is optional and can be enabled in Settings.
 
 Completion detection checks file age, two stable size/timestamp observations, and an exclusive-open probe. It is conservative but cannot prove that a program will never reopen a file later. Browser partial-download extensions are always excluded. Avoid downloading directly into managed category folders.
 
