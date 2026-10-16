@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible problem with Dowlume.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Please use disposable samples. Do not attach personal downloads, the local database, or unredacted file paths."
+  - type: input
+    id: version
+    attributes:
+      label: Dowlume version and package
+      placeholder: "0.1.0, installer or portable ZIP"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version and build
+      description: "Open Settings > System > About to find this information."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "Include the action, file extension, and whether the folder is on another disk. Use fictional filenames."
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected and actual result
+      description: "Include any visible error and whether the sample file remains at its source, destination, or in Recycle Bin."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: "Optional redacted screenshots, display scaling, and whether the problem happens after restarting."

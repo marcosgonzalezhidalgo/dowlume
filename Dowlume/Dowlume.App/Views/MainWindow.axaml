@@ -143,7 +143,7 @@
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,16,0,0" IsEnabled="{Binding IsIdle}">
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,16,0,0" IsEnabled="{Binding CanReviewSelectedFile}">
             <Button Content="Keep" Command="{Binding KeepCommand}" Classes="primary" />
             <Button Content="Snooze 7 days" Command="{Binding SnoozeCommand}" />
             <Button Content="Move to…" Command="{Binding MoveCommand}" />
@@ -194,7 +194,7 @@
             </StackPanel>
           </Border>
           <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="12" Margin="0,12,0,0" IsEnabled="{Binding IsIdle}">
-            <Button Content="Undo selected action…" Command="{Binding UndoCommand}" />
+            <Button Content="Undo selected action…" Command="{Binding UndoCommand}" IsEnabled="{Binding CanUndoSelectedOperation}" />
             <Button Content="Retry interrupted operations" Command="{Binding RetryRecoveryCommand}" />
           </StackPanel>
         </Grid>

@@ -4,11 +4,14 @@
 #ifndef OutputDirectory
   #define OutputDirectory "..\artifacts"
 #endif
+#ifndef ApplicationVersion
+  #error ApplicationVersion must match the project version.
+#endif
 
 [Setup]
 AppId={{A65DE461-2F0E-47BC-8352-3F980674F3DB}
 AppName=Dowlume
-AppVersion=0.1.0
+AppVersion={#ApplicationVersion}
 AppPublisher=Dowlume contributors
 AppPublisherURL=https://github.com/marcosgonzalezhidalgo/dowlume
 DefaultDirName={localappdata}\Programs\Dowlume
@@ -18,12 +21,14 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 OutputDir={#OutputDirectory}
-OutputBaseFilename=Dowlume-0.1.0-win-x64-setup
+OutputBaseFilename=Dowlume-{#ApplicationVersion}-win-x64-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\Dowlume.App.exe
-CloseApplications=yes
+AppMutex=Local\Dowlume.Desktop
+SetupMutex=Local\Dowlume.Setup
+CloseApplications=no
 RestartApplications=no
 LicenseFile=..\LICENSE
 SetupIconFile=..\Dowlume\Dowlume.App\Assets\dowlume.ico
@@ -33,6 +38,7 @@ Source: "{#PublishDirectory}\*"; DestDir: "{app}"; Flags: ignoreversion recurses
 
 [Icons]
 Name: "{group}\Dowlume"; Filename: "{app}\Dowlume.App.exe"
+Name: "{group}\Dowlume quick start"; Filename: "{app}\START-HERE.txt"
 
 [Run]
 Filename: "{app}\Dowlume.App.exe"; Description: "Open Dowlume"; Flags: nowait postinstall skipifsilent unchecked

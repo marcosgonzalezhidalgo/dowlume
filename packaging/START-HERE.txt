@@ -1,0 +1,44 @@
+Dowlume - Your downloads, under control
+
+GET STARTED
+
+1. Run Dowlume.App.exe. Keep all files in this package together.
+   The .NET runtime is included; no separate runtime installation is needed.
+2. In Settings, choose a disposable folder containing COPIES of sample downloads.
+   Save settings, open Preview, and select Refresh preview.
+3. Check the proposed destinations. Organize and monitor asks for confirmation
+   before moving files. It also covers future completed downloads in that folder.
+4. Pause stops monitoring. Closing the window stops the app. Hide to tray keeps
+   it running; use the tray icon to reopen it or exit.
+5. When comfortable with the workflow, choose your local Downloads folder.
+
+REVIEW AND RECOVERY
+
+Aging files move into Expiring Files for your decision. Keep excludes a file
+from further age reviews. Snooze returns it to its category for seven days.
+Move lets you choose another folder. Recycle asks for confirmation and uses
+Windows Recycle Bin, with no permanent-delete fallback.
+
+Activity provides search, filters, paths, and undo for eligible actions.
+Undo requires unchanged content and an available original location. Restore
+recycled files through Windows Recycle Bin. For an interrupted operation,
+inspect the recorded paths before choosing Retry interrupted operations.
+Ambiguous copies are preserved. Do not delete either copy without checking it.
+
+FILES AND PRIVACY
+
+Only direct files in the chosen folder are discovered. Existing subfolders are
+left alone. Monitoring starts paused after every launch. Network shares,
+symbolic links, junctions, and cloud placeholders are unsupported.
+
+Keep backups of valuable files. Close Dowlume before upgrading or uninstalling.
+Uninstall retains your organized files and profile in %LOCALAPPDATA%\Dowlume.
+The private database contains file paths and hashes. Exit the app before backing
+up that entire folder. No account, cloud synchronization, or telemetry is used.
+
+HELP AND FEEDBACK
+
+Full guide: https://github.com/marcosgonzalezhidalgo/dowlume/blob/main/docs/USER_GUIDE.md
+Report an issue: https://github.com/marcosgonzalezhidalgo/dowlume/issues
+Include your Windows version, Dowlume version, steps, and expected/actual result.
+Do not attach personal downloads, the database, or unredacted private paths.

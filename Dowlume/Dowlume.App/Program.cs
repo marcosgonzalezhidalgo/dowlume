@@ -9,6 +9,8 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Setup checks this marker before replacing or uninstalling running binaries.
+        using Mutex? installationGuard = OperatingSystem.IsWindows() ? new Mutex(false, @"Local\Dowlume.Desktop") : null;
         if (args is ["--data-directory", var directory])
         {
             DataDirectory = Path.GetFullPath(directory);

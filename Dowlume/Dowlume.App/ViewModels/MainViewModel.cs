@@ -32,10 +32,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _managedCount;
     [ObservableProperty] private int _reviewCount;
     [ObservableProperty] private int _attentionCount;
-    [ObservableProperty] private TrackedFile? _selectedReview;
-    [ObservableProperty] private OperationRecord? _selectedOperation;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanReviewSelectedFile))] private TrackedFile? _selectedReview;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanUndoSelectedOperation))] private OperationRecord? _selectedOperation;
 
     public bool IsIdle => !IsBusy;
+    public bool CanReviewSelectedFile => IsIdle && SelectedReview is not null;
+    public bool CanUndoSelectedOperation => IsIdle && SelectedOperation?.CanUndo == true;
     public bool CanConfigure => !IsBusy && !IsMonitoring;
     public string MonitoringLabel => IsMonitoring ? "Monitoring is on" : "Monitoring is paused";
     public ObservableCollection<CategoryRuleViewModel> Rules { get; } = [];
@@ -63,6 +65,8 @@ public partial class MainViewModel : ObservableObject
     partial void OnIsBusyChanged(bool value)
     {
         OnPropertyChanged(nameof(IsIdle));
+        OnPropertyChanged(nameof(CanReviewSelectedFile));
+        OnPropertyChanged(nameof(CanUndoSelectedOperation));
         OnPropertyChanged(nameof(CanConfigure));
     }
 

@@ -1,11 +1,19 @@
 name: Package Windows candidate
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'Dowlume/**'
+      - 'packaging/**'
+      - 'scripts/Build-Release.ps1'
+      - 'scripts/Test-WindowsPackage.ps1'
+      - '.github/workflows/package.yml'
 permissions:
   contents: read
 jobs:
   package:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -13,11 +21,24 @@ jobs:
           dotnet-version: 10.0.401
       - name: Build tested release packages
         shell: pwsh
-        run: ./scripts/Build-Release.ps1
+        run: ./scripts/Build-Release.ps1 -RequireInstaller -OutputDirectory artifacts/release-candidate
+      - name: Verify portable startup, installation, running-app guards, and uninstall
+        shell: pwsh
+        run: >-
+          ./scripts/Test-WindowsPackage.ps1
+          -Installer artifacts/release-candidate/Dowlume-0.1.0-win-x64-setup.exe
+          -Archive artifacts/release-candidate/Dowlume-0.1.0-win-x64.zip
+          -ReportPath artifacts/acceptance/package.json
       - uses: actions/upload-artifact@v4
         with:
           name: Dowlume-0.1.0-win-x64
           path: |
-            artifacts/*.zip
-            artifacts/*.exe
-            artifacts/SHA256SUMS.txt
+            artifacts/release-candidate/*.zip
+            artifacts/release-candidate/*.exe
+            artifacts/release-candidate/SHA256SUMS.txt
+            artifacts/release-candidate/BUILD-INFO.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-package-acceptance
+          path: artifacts/acceptance/
