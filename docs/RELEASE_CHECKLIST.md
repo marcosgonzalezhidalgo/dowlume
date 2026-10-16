@@ -14,6 +14,8 @@ If the compiler is in a custom location, pass `-InnoCompiler "C:\path\ISCC.exe"`
 
 Each invocation creates a new directory under `artifacts/releases/`; `-OutputDirectory <new-path>` chooses another new directory. Existing output directories are refused so stale binaries or installers cannot enter a new build. Outputs include the self-contained publish directory, portable ZIP, installer, acceptance-kit ZIP, `BUILD-INFO.json`, and SHA-256 checksums for exactly those distributable files. The version is read from the application project. `-SkipTests` is intended only after the same source revision has already passed validation.
 
+Debug symbols, including native PDB assets supplied by NuGet packages, are removed only from the fresh publish directory before archiving. The portable acceptance check refuses packages containing them; runtime libraries remain included.
+
 `BUILD-INFO.json` identifies the source commit, runtime target, build time, signing status, and whether the working tree was dirty. Rebuild from clean, merged `main` before preparing release assets. Do not distribute a dirty-tree build as the approved release. Retain checksums in every acceptance report; changed binaries require affected acceptance checks to be repeated.
 
 The installer runs without elevation, creates application and quick-start Start menu shortcuts, and retains application data on uninstall. It refuses upgrade/uninstall while a Dowlume process is running in the session. Exit the app first; Setup does not force it closed. The ZIP includes the runtime and offline `START-HERE.txt`. Neither package configures automatic startup. The icon is original code-drawn artwork; regenerate it with `scripts/New-AppIcon.ps1`.
