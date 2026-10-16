@@ -15,6 +15,11 @@ internal static class Program
         {
             throw new PlatformNotSupportedException("This acceptance harness requires Windows.");
         }
+        if (args is ["probe-recycle", var sourcePath, var expectedHash, var recycleReport])
+        {
+            await RecycleProbe.RunAsync(sourcePath, expectedHash, recycleReport);
+            return;
+        }
         if (args is ["move", var database, var fileId, var destination])
         {
             var store = new SqliteStateStore(database);
