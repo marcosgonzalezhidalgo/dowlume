@@ -32,6 +32,10 @@ Only files directly inside the selected folder are discovered. Existing subfolde
 
 Monitoring starts paused on every launch. Preview and confirm again to resume. **Pause** stops the watcher and waits for an active operation. **Hide to tray** keeps the application running; use the tray menu to reopen it or exit. Closing the main window stops monitoring.
 
+The Dowlume icon appears in the Windows notification area, sometimes inside the **Show hidden icons** overflow. Click it to restore the window, or right-click for **Open Dowlume** and **Exit**. You can move the icon into the visible notification area using Windows taskbar settings.
+
+In **Settings**, enable **Start Dowlume when I sign in to Windows** to open this copy of the application at sign-in. The change applies immediately to your account and is off by default. Monitoring still starts paused. Disable the option before relocating a portable copy; enable it again from the new location. Windows Settings can independently disable startup applications. Uninstall removes the startup entry when it belongs to that installation.
+
 ## Review files
 
 A file's age starts when Dowlume first organizes it, not from its downloaded or modified timestamp. When its category's review period expires, it moves to `Expiring Files`.

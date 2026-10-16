@@ -13,7 +13,7 @@ namespace Dowlume.App;
 public partial class App : Application
 {
     private FileStream? _instanceLock;
-    private TrayIcon? _trayIcon;
+    private DesktopTray? _tray;
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -32,9 +32,10 @@ public partial class App : Application
                 var store = new SqliteStateStore(Path.Combine(dataDirectory, "dowlume.db"));
                 var organizer = new DownloadOrganizer(store, new SafeFileMover(), new FileReadiness(), new WindowsRecycleBin());
                 var window = new MainWindow();
-                window.DataContext = new MainViewModel(store, organizer, new DesktopDialogs(window), log);
+                window.DataContext = new MainViewModel(store, organizer, new DesktopDialogs(window), log,
+                    new WindowsStartupRegistration());
                 desktop.MainWindow = window;
-                ConfigureTray(window);
+                _tray = new DesktopTray(this, window);
                 log.Write("application_started");
             }
             catch (Exception error)
@@ -53,28 +54,10 @@ public partial class App : Application
                     }
                 };
             }
-            desktop.Exit += (_, _) => { _trayIcon?.Dispose(); _instanceLock?.Dispose(); };
+            desktop.Exit += (_, _) => { _tray?.Dispose(); _instanceLock?.Dispose(); };
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ConfigureTray(Window window)
-    {
-        var show = new NativeMenuItem("Open Dowlume");
-        show.Click += (_, _) => { window.Show(); window.WindowState = WindowState.Normal; window.Activate(); };
-        var exit = new NativeMenuItem("Exit");
-        exit.Click += (_, _) => window.Close();
-        var menu = new NativeMenu();
-        menu.Items.Add(show);
-        menu.Items.Add(exit);
-        _trayIcon = new TrayIcon
-        {
-            ToolTipText = "Dowlume — your downloads, under control",
-            Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Dowlume.App/Assets/dowlume.ico"))),
-            Menu = menu,
-            IsVisible = true
-        };
-        _trayIcon.Clicked += (_, _) => { window.Show(); window.Activate(); };
-    }
 }

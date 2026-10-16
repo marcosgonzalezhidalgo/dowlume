@@ -16,6 +16,7 @@ public partial class MainViewModel : ObservableObject
     private readonly DownloadOrganizer _organizer;
     private readonly IDesktopDialogs _dialogs;
     private readonly DiagnosticLog _log;
+    private readonly IStartupRegistration? _startup;
     private readonly CancellationTokenSource _shutdown = new();
     private DownloadMonitor? _monitor;
     private AppSettings? _previewSettings;
@@ -32,10 +33,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _managedCount;
     [ObservableProperty] private int _reviewCount;
     [ObservableProperty] private int _attentionCount;
+    [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanReviewSelectedFile))] private TrackedFile? _selectedReview;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanUndoSelectedOperation))] private OperationRecord? _selectedOperation;
 
     public bool IsIdle => !IsBusy;
+    public bool SupportsWindowsStartup => _startup?.IsSupported == true;
     public bool CanReviewSelectedFile => IsIdle && SelectedReview is not null;
     public bool CanUndoSelectedOperation => IsIdle && SelectedOperation?.CanUndo == true;
     public bool CanConfigure => !IsBusy && !IsMonitoring;
@@ -47,12 +50,19 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<OperationRecord> Activity { get; } = [];
     public ObservableCollection<CategorySummary> Categories { get; } = [];
 
-    public MainViewModel(IStateStore store, DownloadOrganizer organizer, IDesktopDialogs dialogs, DiagnosticLog log)
+    public MainViewModel(IStateStore store, DownloadOrganizer organizer, IDesktopDialogs dialogs, DiagnosticLog log,
+        IStartupRegistration? startup = null)
     {
         _store = store;
         _organizer = organizer;
         _dialogs = dialogs;
         _log = log;
+        _startup = startup;
+        try
+        {
+            StartWithWindows = startup?.IsEnabled == true;
+        }
+        catch (Exception error) { ShowError(error); }
         AppSettings settings = store.LoadSettings() ?? new AppSettings { DownloadsPath = DownloadsFolder.Suggest() };
         DownloadsPath = settings.DownloadsPath;
         ExcludedExtensions = string.Join(", ", settings.ExcludedExtensions);
@@ -61,6 +71,29 @@ public partial class MainViewModel : ObservableObject
             Rules.Add(new CategoryRuleViewModel(rule));
         }
     }
+
+    [RelayCommand]
+    private Task ToggleWindowsStartupAsync() => RunAsync(() =>
+    {
+        if (_startup is null || !_startup.IsSupported)
+        {
+            throw new InvalidOperationException("Windows startup is unavailable for this application host.");
+        }
+        try
+        {
+            _startup.SetEnabled(!StartWithWindows);
+            StartWithWindows = _startup.IsEnabled;
+            StatusMessage = StartWithWindows
+                ? "Dowlume will open when you sign in. Monitoring will remain paused until you preview and start."
+                : "Dowlume will no longer start automatically from this location.";
+        }
+        finally
+        {
+            // Restore the checkbox if Windows refused the requested change.
+            OnPropertyChanged(nameof(StartWithWindows));
+        }
+        return Task.CompletedTask;
+    });
 
     partial void OnIsBusyChanged(bool value)
     {

@@ -30,6 +30,8 @@ After the smoke test, install normally with the wizard and a standard account. A
 4. Select Organize and monitor, then cancel. Confirm that nothing moved. Repeat and confirm; verify the category folders and file contents.
 5. Add another completed sample, wait for organization, then Pause. Confirm that a subsequent sample is left in place.
 6. Use Hide to tray, reopen from the tray icon, and exit from the tray menu. Confirm the process has exited. Relaunch and verify that monitoring remains paused.
+   Also minimize before hiding and verify both clicking the icon and choosing Open Dowlume restore a normal window. Check the notification-area overflow if the icon is not pinned.
+7. In the disposable Windows account, enable Start Dowlume when I sign in to Windows. Sign out and back in; verify the app opens with monitoring paused. Disable the option and repeat sign-in. Enable it again before upgrading; confirm the upgrade retains it and uninstall removes only the entry for the installed copy. Do not test sign-in by signing out of the host's working account.
 7. Find the sample in Activity, inspect its paths, and undo an eligible operation. Check that content is preserved and an occupied original path is never overwritten.
 8. Close the app, upgrade/reinstall through the wizard, and reopen it. Confirm the saved configuration and history remain. Close and uninstall; confirm the sample files and profile remain.
 

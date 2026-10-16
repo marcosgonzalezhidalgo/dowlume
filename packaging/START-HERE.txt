@@ -9,7 +9,9 @@ GET STARTED
 3. Check the proposed destinations. Organize and monitor asks for confirmation
    before moving files. It also covers future completed downloads in that folder.
 4. Pause stops monitoring. Closing the window stops the app. Hide to tray keeps
-   it running; use the tray icon to reopen it or exit.
+   it running; use the notification-area icon (possibly under Show hidden icons)
+   to reopen it or exit. Settings offers an optional Windows sign-in startup
+   setting, off by default. Monitoring still starts paused after sign-in.
 5. When comfortable with the workflow, choose your local Downloads folder.
 
 REVIEW AND RECOVERY
