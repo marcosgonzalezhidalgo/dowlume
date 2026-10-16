@@ -1,5 +1,24 @@
 # Local validation record
 
+## 2026-10-16: Windows release hardening
+
+Implementation revision: `d01ae7b`. Environment: Windows 11 Pro x64 build 26200, .NET SDK 10.0.401, Inno Setup 6.7.3. File-operation tests used unique disposable directories; personal Downloads and Recycle Bin settings were not modified. The user confirmed that no clean Windows environment is currently available.
+
+| Check | Result |
+| --- | --- |
+| Automated regression suite | 54 non-shell tests passed in Release configuration. |
+| Native recycling | Separate WindowsShell test passed with the verified read handle; one uniquely named disposable file was recycled. The bin was not emptied. |
+| Physical cross-volume move | A 64 MiB sample moved from the NVMe system volume to a separate SATA disk and was restored by Undo; hashes matched. |
+| Interrupted physical copy | The isolated worker was terminated during a 512 MiB cross-volume copy. The original hash remained intact, the partial destination differed, recovery preserved both, marked NeedsAttention, and refused another move. |
+| Portable and installer | ZIP extraction/launch/exit, per-user installation, upgrade from the earlier local candidate, and uninstall passed. The real SQLite profile and a sample user file were retained unchanged by install/uninstall. |
+| Running application protection | Upgrade and uninstall both refused while Dowlume was running; executable content remained unchanged. Duplicate-profile startup was refused and normal shutdown completed. |
+| Packaging checks | Existing output directory refused; runtime-free acceptance mode correctly refused the development PC. Offline guide and bundled runtime/native libraries present. |
+| Formatting and dependencies | Solution and acceptance-harness formatting passed; PowerShell scripts parsed; no vulnerable packages reported by configured NuGet sources. |
+
+The preliminary installer smoke used SHA-256 `379132929097280BF574461AFDD25FD70C79F32431169AEAA29BE85CCB6DC130`; the earlier candidate was `AE7AB83D591A82DE574B253141D705D4923E747F5F84E3772185649417D2CA36`. These preliminary packages were built before committing and are marked dirty in their build information. They establish the local checks above, not approval of final release assets. Final packages must be rebuilt from the clean merged revision and have their own smoke report and hashes.
+
+Raw reports remain under `artifacts/acceptance/` because they contain local paths. Cross-volume fixtures were retained for inspection. These tests cover process interruption, not power loss or physical disk failure. Clean-machine installation without .NET, disabled/full Recycle Bin behavior, independent first-use testing, and final release review remain open. The [acceptance procedure](WINDOWS_ACCEPTANCE.md) and [release checklist](RELEASE_CHECKLIST.md) define the handoff; stable `v0.1.0` publication is not yet justified.
+
 ## 2026-10-16: Searchable activity history
 
 Environment: Windows x64, .NET SDK 10.0.401. Application revision: `ce28fda`. This change extends Activity beyond the former 200-entry display limit; the tagged release candidate and existing local packages are unchanged.

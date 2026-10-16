@@ -10,6 +10,8 @@ For a downloaded or locally built package, run the setup executable (for example
 
 Current locally built packages are unsigned; release signing is still a publication decision. Only use a package from a source you trust and compare its SHA-256 checksum with the accompanying `SHA256SUMS.txt`.
 
+The package includes `START-HERE.txt`, which opens offline in a text editor. The installer adds a **Dowlume quick start** Start menu shortcut. Exit Dowlume, including any instance hidden in the tray, before upgrading or uninstalling; Setup refuses while the app is running. Installation and uninstall retain your files and local profile.
+
 ## First use
 
 1. Open **Settings** and choose an existing local Downloads folder. The suggested path comes from the Windows Downloads known folder.

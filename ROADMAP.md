@@ -11,11 +11,14 @@
 ## Remaining for public 0.1.0
 
 - [ ] Clean-machine installation, first-use, upgrade, and uninstall acceptance testing.
-- [ ] Physical cross-volume interruption and disabled/full Recycle Bin testing.
+- [x] Physical cross-volume move, undo, and interrupted-copy recovery testing on separate NVMe/SATA disks.
+- [ ] Disabled/full Recycle Bin testing in an isolated Windows environment.
 - [ ] Independent release approval after integration and acceptance checks.
 - [ ] Decide on signing, sign when a certificate is available, and publish release notes, binaries, and checksums with tag `v0.1.0`.
 
 The [release checklist](docs/RELEASE_CHECKLIST.md) is the detailed acceptance record. Local package generation and automated tests do not complete these gates.
+
+Current work is limited to Windows release hardening. Clean-machine testing is unavailable, so the stable release remains unpublished. The [acceptance kit and procedure](docs/WINDOWS_ACCEPTANCE.md) prepare the remaining tests; new features and Linux/macOS work stay deferred.
 
 ## Completed Windows MVP
 
