@@ -44,3 +44,16 @@ Name: "{group}\Dowlume quick start"; Filename: "{app}\START-HERE.txt"
 Filename: "{app}\Dowlume.App.exe"; Description: "Open Dowlume"; Flags: nowait postinstall skipifsilent unchecked
 
 ; Deliberately retain the local database, diagnostics, and all user files on uninstall.
+
+[Code]
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  StartupCommand: String;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'Dowlume', StartupCommand) then
+      if CompareText(StartupCommand, '"' + ExpandConstant('{app}\Dowlume.App.exe') + '"') = 0 then
+        RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'Dowlume');
+  end;
+end;

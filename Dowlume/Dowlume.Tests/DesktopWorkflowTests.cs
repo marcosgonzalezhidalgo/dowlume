@@ -15,6 +15,68 @@ namespace Dowlume.Tests;
 public sealed class DesktopWorkflowTests
 {
     [Fact]
+    public async Task TrayRemainsAttachedWhileHiddenAndBothOpenActionsRestoreTheWindow()
+    {
+        using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await session.Dispatch(() =>
+        {
+            var window = new MainWindow();
+            window.Show();
+            using (var tray = new DesktopTray(Application.Current!, window))
+            {
+                TrayIcon icon = Assert.Single(TrayIcon.GetIcons(Application.Current!)!);
+                Assert.True(icon.IsVisible);
+                window.Hide();
+                Assert.False(window.IsVisible);
+                icon.Command!.Execute(null);
+                Assert.True(window.IsVisible);
+                window.WindowState = WindowState.Minimized;
+                window.Hide();
+                var open = Assert.IsType<NativeMenuItem>(icon.Menu!.Items[0]);
+                open.Command!.Execute(null);
+                Assert.True(window.IsVisible);
+                Assert.Equal(WindowState.Normal, window.WindowState);
+                var exit = Assert.IsType<NativeMenuItem>(icon.Menu.Items[2]);
+                exit.Command!.Execute(null);
+                Assert.False(window.IsVisible);
+            }
+            Assert.Null(TrayIcon.GetIcons(Application.Current!));
+            return true;
+        }, timeout.Token);
+    }
+
+    [Fact]
+    public async Task StartupToggleIsOptInAndReportsFailuresWithoutClaimingSuccess()
+    {
+        using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await session.Dispatch(async () =>
+        {
+            using var workspace = new TemporaryWorkspace();
+            var store = new SqliteStateStore(workspace.Database);
+            var organizer = new DownloadOrganizer(store, new SafeFileMover(), new FileReadiness(), new NoRecycle());
+            var startup = new TestStartup();
+            var model = new MainViewModel(store, organizer, new TestDialogs(),
+                new DiagnosticLog(Path.Combine(workspace.Root, "diagnostics.jsonl")), startup);
+            Assert.False(model.StartWithWindows);
+            Assert.Equal(0, startup.Changes);
+            await model.ToggleWindowsStartupCommand.ExecuteAsync(null);
+            Assert.True(model.StartWithWindows);
+            Assert.False(model.IsMonitoring);
+            startup.Fail = true;
+            await model.ToggleWindowsStartupCommand.ExecuteAsync(null);
+            Assert.True(model.StartWithWindows);
+            Assert.Contains("Access denied", model.ErrorMessage);
+            startup.Fail = false;
+            await model.ToggleWindowsStartupCommand.ExecuteAsync(null);
+            Assert.False(model.StartWithWindows);
+            await model.ShutdownAsync();
+            return true;
+        }, timeout.Token);
+    }
+
+    [Fact]
     public async Task ActivitySearchPagingAndUndoWorkWithOlderHistory()
     {
         using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));
@@ -193,5 +255,32 @@ public sealed class DesktopWorkflowTests
     private sealed class NoRecycle : IRecycleBin
     {
         public Task RecycleAsync(string path) => throw new InvalidOperationException("This test does not recycle files.");
+    }
+
+    private sealed class TestStartup : IStartupRegistration
+    {
+        public bool IsSupported => true;
+        public bool IsEnabled
+        {
+            get; private set;
+        }
+        public bool Fail
+        {
+            get; set;
+        }
+        public int Changes
+        {
+            get; private set;
+        }
+
+        public void SetEnabled(bool enabled)
+        {
+            if (Fail)
+            {
+                throw new UnauthorizedAccessException();
+            }
+            Changes++;
+            IsEnabled = enabled;
+        }
     }
 }

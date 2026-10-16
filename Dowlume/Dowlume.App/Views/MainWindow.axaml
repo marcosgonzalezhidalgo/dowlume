@@ -203,6 +203,10 @@
         <ScrollViewer Margin="0,20,0,0">
           <StackPanel Spacing="18" IsEnabled="{Binding CanConfigure}">
             <TextBlock Text="Make room for your routine" Classes="heading" />
+            <StackPanel Spacing="6" IsVisible="{Binding SupportsWindowsStartup}">
+              <CheckBox Content="Start Dowlume when I sign in to Windows" IsChecked="{Binding StartWithWindows, Mode=OneWay}" Command="{Binding ToggleWindowsStartupCommand}" />
+              <TextBlock Text="Applied immediately for your Windows account. Monitoring starts paused. Windows Settings can also disable startup apps." TextWrapping="Wrap" Classes="muted" />
+            </StackPanel>
             <TextBlock Text="Pause monitoring to change these settings. Saved rules apply to future organization; existing categories are not rearranged." TextWrapping="Wrap" Classes="muted" />
             <StackPanel Spacing="8">
               <TextBlock Text="Downloads folder" FontWeight="SemiBold" />
