@@ -254,7 +254,7 @@ public sealed class DesktopWorkflowTests
 
     private sealed class NoRecycle : IRecycleBin
     {
-        public Task RecycleAsync(string path) => throw new InvalidOperationException("This test does not recycle files.");
+        public Task RecycleAsync(string path, string expectedHash) => throw new InvalidOperationException("This test does not recycle files.");
     }
 
     private sealed class TestStartup : IStartupRegistration

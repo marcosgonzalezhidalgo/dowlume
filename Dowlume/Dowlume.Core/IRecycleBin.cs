@@ -2,5 +2,5 @@ namespace Dowlume.Core;
 
 public interface IRecycleBin
 {
-    Task RecycleAsync(string path);
+    Task RecycleAsync(string path, string expectedHash);
 }

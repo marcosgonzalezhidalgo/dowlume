@@ -193,6 +193,27 @@ public sealed class OrganizerTests : IDisposable
     }
 
     [Fact]
+    public async Task ConcurrentReviewDecisionsRejectTheStaleSecondAction()
+    {
+        await _organizer.OrganizeAsync(_workspace.CreateFile("review.pdf"), _settings);
+        _clock.Now = _clock.Now.AddDays(31);
+        await _organizer.ReconcileAsync(_settings);
+        TrackedFile file = Assert.Single(_store.GetFiles());
+        var readiness = new PausedReadiness();
+        var organizer = new DownloadOrganizer(_store, _mover, readiness, new RefuseRecycle(), _clock);
+        Task keep = organizer.KeepAsync(file.Id, _settings);
+        await readiness.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Task snooze = organizer.SnoozeAsync(file.Id, _settings);
+        Assert.False(snooze.IsCompleted);
+        readiness.Resume.SetResult(true);
+        await keep;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => snooze);
+        Assert.Equal(LifecycleStatus.Kept, Assert.Single(_store.GetFiles()).Status);
+        Assert.Equal(3, _store.GetOperations().Count);
+        Assert.Equal(file.ContentHash, _mover.Hash(Assert.Single(_store.GetFiles()).CurrentPath));
+    }
+
+    [Fact]
     public async Task ChangedPreviewIsRejectedBeforeAnyMove()
     {
         string source = _workspace.CreateFile("preview.pdf");
@@ -261,7 +282,10 @@ public sealed class OrganizerTests : IDisposable
         using (var stream = new FileStream(source, FileMode.Open, FileAccess.Write))
         {
             byte[] block = new byte[1024 * 1024];
-            Random.Shared.NextBytes(block);
+            for (int index = 0; index < block.Length; index++)
+            {
+                block[index] = (byte)(index % 251);
+            }
             for (int index = 0; index < 32; index++)
             {
                 stream.Write(block);
@@ -289,6 +313,18 @@ public sealed class OrganizerTests : IDisposable
 
     private sealed class RefuseRecycle : IRecycleBin
     {
-        public Task RecycleAsync(string path) => throw new IOException("Simulated unavailable recycle bin.");
+        public Task RecycleAsync(string path, string expectedHash) => throw new IOException("Simulated unavailable recycle bin.");
+    }
+
+    private sealed class PausedReadiness : IFileReadiness
+    {
+        public TaskCompletionSource<bool> Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<bool> Resume { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<bool> IsReadyAsync(string path, CancellationToken cancellationToken)
+        {
+            Entered.TrySetResult(true);
+            return Resume.Task.WaitAsync(cancellationToken);
+        }
     }
 }

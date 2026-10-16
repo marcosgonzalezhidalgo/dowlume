@@ -6,7 +6,7 @@ namespace Dowlume.Infrastructure;
 
 public sealed class WindowsRecycleBin : IRecycleBin
 {
-    public Task RecycleAsync(string path)
+    public Task RecycleAsync(string path, string expectedHash)
     {
         if (!OperatingSystem.IsWindowsVersionAtLeast(6, 2))
         {
@@ -22,7 +22,7 @@ public sealed class WindowsRecycleBin : IRecycleBin
                 {
                     throw new PlatformNotSupportedException();
                 }
-                RecycleOnStaThread(path);
+                RecycleOnStaThread(path, expectedHash);
                 completion.SetResult();
             }
             catch (Exception error)
@@ -40,8 +40,11 @@ public sealed class WindowsRecycleBin : IRecycleBin
     }
 
     [SupportedOSPlatform("windows6.2")]
-    private static void RecycleOnStaThread(string path)
+    private static void RecycleOnStaThread(string path, string expectedHash)
     {
+        using var directories = DirectoryLease.Acquire(path);
+        var mover = new SafeFileMover();
+        using FileStream verifiedSource = mover.OpenVerifiedRead(path, expectedHash);
         var operation = (IFileOperation)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("3AD05575-8857-4850-9277-11B85BDB8E09"), throwOnError: true)!)!;
         IShellItem? item = null;
         try
@@ -54,14 +57,18 @@ public sealed class WindowsRecycleBin : IRecycleBin
             const uint silent = 0x0004;
             const uint noConfirmation = 0x0010;
             operation.SetOperationFlags(recycleOnly | failEarly | noErrorUi | silent | noConfirmation);
-            var sink = new RecycleOnlyProgressSink();
+            var sink = new RecycleOnlyProgressSink(() =>
+            {
+                // The shell resolves paths asynchronously; reject replacement before it acts.
+                using FileStream currentSource = mover.OpenVerifiedRead(path, expectedHash);
+            });
             operation.DeleteItem(item, sink);
             operation.PerformOperations();
             operation.GetAnyOperationsAborted(out bool aborted);
             Marshal.ThrowExceptionForHR(sink.Result);
             if (aborted || !sink.Recycled || File.Exists(path))
             {
-                throw new IOException("Windows could not recycle this file. No permanent-delete fallback is available.");
+                throw new IOException($"Windows could not recycle this file. No permanent-delete fallback is available. Shell result: {sink.Result:X8}.");
             }
         }
         finally
@@ -74,6 +81,7 @@ public sealed class WindowsRecycleBin : IRecycleBin
         }
     }
 
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
     private static extern int SHCreateItemFromParsingName(string path, IntPtr bindContext, ref Guid interfaceId, out IShellItem item);
 

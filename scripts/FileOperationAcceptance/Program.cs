@@ -49,12 +49,16 @@ internal static class Program
         var mover = new SafeFileMover();
 
         TrackedFile normal = CreateReviewFile(store, sourceRoot, "complete.bin", 64);
+        const string alternateContent = "Disposable alternate-stream metadata";
+        File.WriteAllText(normal.CurrentPath + ":DowlumeAcceptance", alternateContent);
         await organizer.MoveAsync(normal.Id, settings, destinationRoot);
         string normalDestination = Path.Combine(destinationRoot, normal.Name);
         Require(!File.Exists(normal.CurrentPath) && mover.Hash(normalDestination) == normal.ContentHash, "Cross-volume move did not preserve content.");
+        Require(File.ReadAllText(normalDestination + ":DowlumeAcceptance") == alternateContent, "The move lost an alternate stream.");
         await organizer.UndoAsync(store.GetOperations().Last().Id, settings);
         Require(File.Exists(normal.CurrentPath) && !File.Exists(normalDestination) && mover.Hash(normal.CurrentPath) == normal.ContentHash,
             "Cross-volume undo did not restore the original content.");
+        Require(File.ReadAllText(normal.CurrentPath + ":DowlumeAcceptance") == alternateContent, "Undo lost an alternate stream.");
 
         TrackedFile interrupted = CreateReviewFile(store, sourceRoot, "interrupted.bin", 512);
         string interruptedDestination = Path.Combine(destinationRoot, interrupted.Name);
@@ -81,8 +85,8 @@ internal static class Program
         }
 
         Require(File.Exists(interrupted.CurrentPath) && File.Exists(interruptedDestination), "The interruption did not leave two inspectable paths.");
-        string sourceHash = mover.Hash(interrupted.CurrentPath);
-        string destinationHash = mover.Hash(interruptedDestination);
+        string sourceHash = await HashAfterWorkerExitAsync(mover, interrupted.CurrentPath);
+        string destinationHash = await HashAfterWorkerExitAsync(mover, interruptedDestination);
         Require(sourceHash == interrupted.ContentHash, "The interrupted move damaged the source.");
         Require(destinationHash != sourceHash, "The copy completed before interruption; repeat the test with a larger file.");
         OperationRecord pending = store.GetOperations().Last();
@@ -107,6 +111,7 @@ internal static class Program
             SourceRoot = sourceRoot,
             DestinationRoot = destinationRoot,
             CompletedMoveAndUndoMiB = 64,
+            AlternateStreamPreserved = true,
             InterruptedMoveMiB = 512,
             SourcePreserved = true,
             PartialDestinationPreserved = true,
@@ -124,7 +129,10 @@ internal static class Program
         string path = Path.Combine(root, AppSettings.ReviewFolderName, name);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         byte[] block = new byte[1024 * 1024];
-        Random.Shared.NextBytes(block);
+        for (int index = 0; index < block.Length; index++)
+        {
+            block[index] = (byte)(index % 251);
+        }
         using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
         {
             for (int index = 0; index < sizeMiB; index++)
@@ -154,6 +162,23 @@ internal static class Program
         return Process.Start(start) ?? throw new InvalidOperationException("Could not start the isolated move worker.");
     }
 
+    private static async Task<string> HashAfterWorkerExitAsync(SafeFileMover mover, string path)
+    {
+        // Windows may finish releasing handles from canceled disk I/O after process exit.
+        var timer = Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                return mover.Hash(path);
+            }
+            catch (IOException) when (timer.Elapsed < TimeSpan.FromSeconds(15))
+            {
+                await Task.Delay(100);
+            }
+        }
+    }
+
     private static DownloadOrganizer CreateOrganizer(SqliteStateStore store) =>
         new(store, new SafeFileMover(), new FileReadiness(TimeSpan.Zero, TimeSpan.Zero), new RefuseRecycle());
 
@@ -167,6 +192,6 @@ internal static class Program
 
     private sealed class RefuseRecycle : IRecycleBin
     {
-        public Task RecycleAsync(string path) => throw new InvalidOperationException("This harness does not recycle files.");
+        public Task RecycleAsync(string path, string expectedHash) => throw new InvalidOperationException("This harness does not recycle files.");
     }
 }

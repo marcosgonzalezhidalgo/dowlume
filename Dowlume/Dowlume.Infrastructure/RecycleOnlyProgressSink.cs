@@ -4,7 +4,7 @@ namespace Dowlume.Infrastructure;
 
 // Windows must explicitly mark each item as recyclable before deletion is permitted.
 [ComVisible(true), ClassInterface(ClassInterfaceType.None)]
-public sealed class RecycleOnlyProgressSink : IFileOperationProgressSink
+public sealed class RecycleOnlyProgressSink(Action? verifySource = null) : IFileOperationProgressSink
 {
     public bool Recycled
     {
@@ -15,12 +15,30 @@ public sealed class RecycleOnlyProgressSink : IFileOperationProgressSink
         get; private set;
     }
 
-    public int PreDeleteItem(uint flags, IntPtr item) => (flags & 0x80) != 0 ? 0 : unchecked((int)0x80004004);
+    public int PreDeleteItem(uint flags, IntPtr item)
+    {
+        const int canceled = unchecked((int)0x80004004);
+        if ((flags & 0x80) == 0)
+        {
+            return canceled;
+        }
+        try
+        {
+            verifySource?.Invoke();
+            return 0;
+        }
+        catch
+        {
+            // Exceptions must not escape a COM callback or permit a fallback delete.
+            return canceled;
+        }
+    }
 
     public int PostDeleteItem(uint flags, IntPtr item, int result, IntPtr destination)
     {
         Result = result;
-        Recycled = result >= 0 && destination != IntPtr.Zero;
+        // Windows also reports COPYENGINE_S_DONT_PROCESS_CHILDREN for a recycled file.
+        Recycled = result is 0 or 0x00270008 && (flags & 0x80) != 0 && destination != IntPtr.Zero;
         return 0;
     }
 

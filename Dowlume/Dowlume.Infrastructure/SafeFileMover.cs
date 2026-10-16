@@ -15,6 +15,11 @@ public sealed class SafeFileMover
     {
         PathSafety.RejectLinks(source);
         PathSafety.RejectLinks(destination);
+        if (OperatingSystem.IsWindows())
+        {
+            MoveOnWindows(source, destination, expectedHash);
+            return;
+        }
         using FileStream stream = OpenVerifiedRead(source, expectedHash);
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
         PathSafety.RejectLinks(destination);
@@ -25,6 +30,32 @@ public sealed class SafeFileMover
         }
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static void MoveOnWindows(string source, string destination, string expectedHash)
+    {
+        using var directories = DirectoryLease.Acquire(source, destination);
+        using FileStream verifiedSource = WindowsFileHandle.OpenForMove(source);
+        VerifyHash(verifiedSource, expectedHash);
+        if (WindowsFileHandle.TryRename(verifiedSource.SafeFileHandle, destination))
+        {
+            return;
+        }
+        WindowsFileHandle.CopyWithoutReplacing(source, destination);
+        // Keep the verified copy locked until the original handle is closed/deleted.
+        using var copy = new FileStream(destination, FileMode.Open, FileAccess.Read, FileShare.Read);
+        VerifyHash(copy, expectedHash);
+        WindowsFileHandle.DeleteVerifiedSource(verifiedSource.SafeFileHandle);
+        verifiedSource.Dispose();
+    }
+
+    private static void VerifyHash(Stream stream, string expectedHash)
+    {
+        if (Convert.ToHexString(SHA256.HashData(stream)) != expectedHash)
+        {
+            throw new IOException("The file changed after it was tracked. Review it in Explorer before retrying.");
+        }
+    }
+
     public FileStream OpenVerifiedRead(string path, string expectedHash)
     {
         PathSafety.RejectLinks(path);
@@ -32,10 +63,7 @@ public sealed class SafeFileMover
         var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 81920, FileOptions.SequentialScan);
         try
         {
-            if (Convert.ToHexString(SHA256.HashData(stream)) != expectedHash)
-            {
-                throw new IOException("The file changed after it was tracked. Review it in Explorer before retrying.");
-            }
+            VerifyHash(stream, expectedHash);
             return stream;
         }
         catch
