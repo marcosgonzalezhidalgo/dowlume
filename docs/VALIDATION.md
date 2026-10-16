@@ -1,5 +1,11 @@
 # Local validation record
 
+## 2026-10-16: Hyper-V guest preparation
+
+Hyper-V access now works from the development session; `Get-VM` initially returned no guests. A dedicated Generation 2 VM was created with two virtual CPUs, 4–6 GiB dynamic memory, a 96 GiB dynamic disk, Secure Boot, and virtual TPM. The firmware/security settings were queried after creation. The VM is powered off pending official Windows 11 x64 media and interactive Windows setup. No guest acceptance test has run.
+
+The exact clean `cf42326f4560515b1574ebe7794ef645a551bc21` candidate and the earlier `cdc5e35` installer were staged in dedicated test storage. All four release checksums and the earlier installer's SHA-256 matched. The preparation script and [Hyper-V handoff](HYPER_V_ACCEPTANCE.md) preserve the distinction between provisioning, automated interactive smoke, and manual acceptance. Microsoft's automated ISO link request was blocked; a browser download was requested. Personal files and host Recycle Bin policy were not changed, and the release remains unpublished.
+
 ## 2026-10-16: Background access, race review, and security scans
 
 Tray/startup implementation: `3218f6a` (PR #12, merged after both hosted workflows passed). File-operation hardening: `eb01156`. All file-operation fixtures were generated for testing. No personal Downloads, host Recycle Bin policy, or VM was modified.

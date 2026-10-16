@@ -8,6 +8,8 @@ Use a fresh Windows 11 x64 VM or spare machine, a standard user account, and no 
 
 For Hyper-V, run `Get-VM` in PowerShell on the Windows host using an account/session authorized to manage Hyper-V. A running `vmms` service alone does not establish that permission or provide an installed guest. If listing VMs fails, resolve host access before attempting guest tests. Use a checkpoint of a disposable guest before changing its Recycle Bin policy, and never substitute host settings for guest settings.
 
+Use the [Hyper-V preparation guide](HYPER_V_ACCEPTANCE.md) and `scripts/New-WindowsAcceptanceVm.ps1` to create the guest, verify official Windows media, transfer the candidate, and establish a clean checkpoint. Windows setup and the interactive acceptance checks still require the guest desktop.
+
 Download the proposed installer, portable ZIP, `BUILD-INFO.json`, and `SHA256SUMS.txt`. Compare each file with `Get-FileHash -Algorithm SHA256`. The initial candidate is unsigned; checksums identify the reviewed artifacts but do not replace trusting their source. Do not publish a package built with `DirtyWorkingTree: true`.
 
 ## Automated package smoke test
