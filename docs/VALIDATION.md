@@ -2,9 +2,11 @@
 
 ## 2026-10-16: Hyper-V guest preparation
 
-Hyper-V access now works from the development session; `Get-VM` initially returned no guests. A dedicated Generation 2 VM was created with two virtual CPUs, 4–6 GiB dynamic memory, a 96 GiB dynamic disk, Secure Boot, and virtual TPM. The firmware/security settings were queried after creation. The VM is powered off pending official Windows 11 x64 media and interactive Windows setup. No guest acceptance test has run.
+Hyper-V access now works from the development session; `Get-VM` initially returned no guests. A dedicated Generation 2 VM was created with two virtual CPUs, 4–6 GiB dynamic memory, a 96 GiB dynamic disk, Secure Boot, and virtual TPM. The firmware/security settings were queried after creation. The VM was initially left powered off pending official Windows 11 x64 media and interactive Windows setup. No guest acceptance test has run.
 
 The exact clean `cf42326f4560515b1574ebe7794ef645a551bc21` candidate and the earlier `cdc5e35` installer were staged in dedicated test storage. All four release checksums and the earlier installer's SHA-256 matched. The preparation script and [Hyper-V handoff](HYPER_V_ACCEPTANCE.md) preserve the distinction between provisioning, automated interactive smoke, and manual acceptance. Microsoft's automated ISO link request was blocked; a browser download was requested. Personal files and host Recycle Bin policy were not changed, and the release remains unpublished.
+
+The user subsequently supplied the official English International x64 ISO. Its SHA-256 matched Microsoft's published value; [media details](HYPER_V_ACCEPTANCE.md#prepared-host-state--2026-10-16) are recorded with the VM handoff. The ISO is attached, the VM is running, and its console is open for interactive Windows setup. Preparation [PR #14](https://github.com/mglezz/dowlume/pull/14) passed build/test and security workflows before merging. Guest setup and acceptance remain pending.
 
 ## 2026-10-16: Background access, race review, and security scans
 
