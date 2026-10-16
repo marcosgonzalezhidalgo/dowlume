@@ -16,6 +16,8 @@ jobs:
       - run: dotnet build Dowlume/Dowlume.slnx -c Release --no-restore
       - run: dotnet test Dowlume/Dowlume.slnx -c Release --no-build --filter "Category!=WindowsShell" --logger trx
       - run: dotnet format Dowlume/Dowlume.slnx --verify-no-changes --no-restore
+      - run: dotnet build scripts/FileOperationAcceptance -c Release
+      - run: dotnet format scripts/FileOperationAcceptance/FileOperationAcceptance.csproj --verify-no-changes --no-restore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
