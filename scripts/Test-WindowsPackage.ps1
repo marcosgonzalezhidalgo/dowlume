@@ -82,6 +82,9 @@ try {
     if ($Archive) {
         $portableDirectory = Join-Path $workspace 'Portable'
         Expand-Archive -LiteralPath $Archive -DestinationPath $portableDirectory
+        if (@(Get-ChildItem -LiteralPath $portableDirectory -Filter '*.pdb' -File -Recurse).Count -gt 0) {
+            throw 'The portable package contains debug symbols that are not needed at runtime.'
+        }
         $executable = Join-Path $portableDirectory 'Dowlume.App.exe'
         $application = Start-Application 'Dowlume'
         Close-Application $application

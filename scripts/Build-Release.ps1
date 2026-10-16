@@ -44,6 +44,10 @@ if (-not $SkipTests) {
 dotnet publish $project -c Release -r win-x64 --self-contained true -o $publishDirectory -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false
 if ($LASTEXITCODE -ne 0) { throw 'Publishing failed.' }
 
+# Native NuGet runtime assets can include PDBs despite DebugSymbols=false.
+Get-ChildItem -LiteralPath $publishDirectory -Filter '*.pdb' -File -Recurse |
+    ForEach-Object { Remove-Item -LiteralPath $_.FullName }
+
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSE') -Destination $publishDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'packaging/START-HERE.txt') -Destination $publishDirectory
 $buildInfo = [ordered]@{
