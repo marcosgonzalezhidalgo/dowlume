@@ -68,6 +68,7 @@ $releaseFiles = @($archive, $buildInfoPath)
 $acceptanceDirectory = Join-Path $artifactDirectory 'acceptance-kit'
 New-Item -ItemType Directory -Path $acceptanceDirectory | Out-Null
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'scripts/Test-WindowsPackage.ps1') -Destination $acceptanceDirectory
+Copy-Item -LiteralPath (Join-Path $repositoryRoot 'scripts/Test-WindowsTray.ps1') -Destination $acceptanceDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'docs/WINDOWS_ACCEPTANCE.md') -Destination $acceptanceDirectory
 $acceptanceArchive = Join-Path $artifactDirectory "Dowlume-$version-windows-acceptance.zip"
 Compress-Archive -Path (Join-Path $acceptanceDirectory '*') -DestinationPath $acceptanceArchive

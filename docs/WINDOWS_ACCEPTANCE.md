@@ -6,6 +6,8 @@ Use this procedure for the exact installer and ZIP proposed for `v0.1.0`. Record
 
 Use a fresh Windows 11 x64 VM or spare machine, a standard user account, and no separately installed .NET runtime. Record how the image was created. A development PC or a GitHub runner with the SDK installed does not satisfy this check.
 
+For Hyper-V, run `Get-VM` in PowerShell on the Windows host using an account/session authorized to manage Hyper-V. A running `vmms` service alone does not establish that permission or provide an installed guest. If listing VMs fails, resolve host access before attempting guest tests. Use a checkpoint of a disposable guest before changing its Recycle Bin policy, and never substitute host settings for guest settings.
+
 Download the proposed installer, portable ZIP, `BUILD-INFO.json`, and `SHA256SUMS.txt`. Compare each file with `Get-FileHash -Algorithm SHA256`. The initial candidate is unsigned; checksums identify the reviewed artifacts but do not replace trusting their source. Do not publish a package built with `DirtyWorkingTree: true`.
 
 ## Automated package smoke test
@@ -16,7 +18,7 @@ The acceptance kit contains `Test-WindowsPackage.ps1`, which runs on Windows Pow
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Test-WindowsPackage.ps1 -Installer .\Dowlume-0.1.0-win-x64-setup.exe -Archive .\Dowlume-0.1.0-win-x64.zip -ReportPath .\package-result.json -RequireNoSharedDotNet
 ```
 
-The script refuses an existing registered Dowlume installation. It creates a unique temporary installation, application profile, and sample file; checks portable launch/exit, install/reinstall, duplicate-instance refusal, running-app upgrade/uninstall refusal, and profile/file retention after uninstall. Reports and fixtures remain in the printed temporary directory for inspection. It records detected runtimes but does not independently prove that the OS image was clean.
+The kit includes `Test-WindowsTray.ps1`; keep it beside the package script. The script refuses an existing registered Dowlume installation or startup entry. It creates a unique temporary installation, application profile, and sample file; checks portable launch/exit, install/reinstall, duplicate-instance refusal, running-app upgrade/uninstall refusal, native tray registration/reopening, startup-entry retention/removal, and profile/file retention after uninstall. Tray reopening uses Windows UI Automation and a native tray-click message; it does not replace testing the overflow menu with a person. Reports and fixtures remain in the printed temporary directory for inspection. It records detected runtimes but does not independently prove that the OS image was clean.
 
 To test an upgrade from the earlier candidate, add `-PreviousInstaller <path-to-previous-installer>`. Without that argument, the upgrade check is a reinstall of the same package. Preserve both installer hashes in the report. If a check fails, inspect its retained logs before rerunning; the script intentionally refuses to overwrite a registered installation left by a failed test.
 
@@ -32,8 +34,8 @@ After the smoke test, install normally with the wizard and a standard account. A
 6. Use Hide to tray, reopen from the tray icon, and exit from the tray menu. Confirm the process has exited. Relaunch and verify that monitoring remains paused.
    Also minimize before hiding and verify both clicking the icon and choosing Open Dowlume restore a normal window. Check the notification-area overflow if the icon is not pinned.
 7. In the disposable Windows account, enable Start Dowlume when I sign in to Windows. Sign out and back in; verify the app opens with monitoring paused. Disable the option and repeat sign-in. Enable it again before upgrading; confirm the upgrade retains it and uninstall removes only the entry for the installed copy. Do not test sign-in by signing out of the host's working account.
-7. Find the sample in Activity, inspect its paths, and undo an eligible operation. Check that content is preserved and an occupied original path is never overwritten.
-8. Close the app, upgrade/reinstall through the wizard, and reopen it. Confirm the saved configuration and history remain. Close and uninstall; confirm the sample files and profile remain.
+8. Find the sample in Activity, inspect its paths, and undo an eligible operation. Check that content is preserved and an occupied original path is never overwritten.
+9. Close the app, upgrade/reinstall through the wizard, and reopen it. Confirm the saved configuration and history remain. Close and uninstall; confirm the sample files and profile remain.
 
 Record unclear wording, errors, unexpected windows, display scaling, and keyboard navigation problems. Attach only redacted screenshots; the journal and profile contain private paths.
 

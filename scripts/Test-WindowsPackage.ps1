@@ -8,6 +8,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'Test-WindowsTray.ps1')
 $Installer = (Resolve-Path -LiteralPath $Installer).Path
 if ($Archive) { $Archive = (Resolve-Path -LiteralPath $Archive).Path }
 if ($PreviousInstaller) { $PreviousInstaller = (Resolve-Path -LiteralPath $PreviousInstaller).Path }
@@ -26,6 +27,15 @@ $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{A65D
 if (Test-Path -LiteralPath $uninstallKey) {
     throw 'An existing Dowlume installation is registered. Use a disposable Windows account or VM; this test will not replace it.'
 }
+$startupKey = 'Software\Microsoft\Windows\CurrentVersion\Run'
+$existingStartup = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($startupKey)
+try {
+    if ($null -ne $existingStartup -and $null -ne $existingStartup.GetValue('Dowlume')) {
+        throw 'A Dowlume startup entry already exists. Use a disposable account; this test will not replace it.'
+    }
+} finally {
+    if ($null -ne $existingStartup) { $existingStartup.Dispose() }
+}
 
 $runId = [Guid]::NewGuid().ToString('N')
 $workspace = Join-Path ([IO.Path]::GetTempPath()) "Dowlume.PackageAcceptance\$runId"
@@ -40,6 +50,14 @@ $executable = Join-Path $installDirectory 'Dowlume.App.exe'
 $database = Join-Path $profile 'dowlume.db'
 $uninstaller = Join-Path $installDirectory 'unins000.exe'
 $application = $null
+$startupCommand = '"' + $executable + '"'
+
+function Get-StartupCommand {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($startupKey)
+    try { if ($null -ne $key) { return $key.GetValue('Dowlume') } }
+    finally { if ($null -ne $key) { $key.Dispose() } }
+    return $null
+}
 
 function Invoke-Setup([string]$Path, [string[]]$SetupArguments) {
     $process = Start-Process -FilePath $Path -ArgumentList $SetupArguments -WindowStyle Hidden -PassThru
@@ -97,8 +115,12 @@ try {
     Close-Application $application
     $application = $null
     $databaseHash = (Get-FileHash -LiteralPath $database).Hash
+    $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($startupKey)
+    try { $key.SetValue('Dowlume', $startupCommand, [Microsoft.Win32.RegistryValueKind]::String) }
+    finally { $key.Dispose() }
 
     Install-Package $Installer 'upgrade.log'
+    if ((Get-StartupCommand) -ne $startupCommand) { throw 'Upgrade changed the opt-in startup entry.' }
     if ((Get-FileHash -LiteralPath $database).Hash -ne $databaseHash) { throw 'Upgrade changed the local database.' }
     if (-not (Test-Path -LiteralPath (Join-Path $installDirectory 'START-HERE.txt'))) { throw 'The offline quick-start guide is missing.' }
     foreach ($runtimeFile in @('coreclr.dll', 'hostfxr.dll', 'e_sqlite3.dll', 'libSkiaSharp.dll')) {
@@ -108,12 +130,14 @@ try {
     $application = Start-Application 'Dowlume'
     $secondInstance = Start-Application 'Dowlume*unable to start'
     Close-Application $secondInstance
+    Test-WindowsTray $application
     $beforeUpgrade = (Get-FileHash -LiteralPath $executable).Hash
     $blockedInstall = Invoke-Setup $Installer @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=""$installDirectory""", "/LOG=""$(Join-Path $workspace 'blocked-upgrade.log')""")
     if ($blockedInstall -eq 0 -or $application.HasExited) { throw 'Setup did not refuse an upgrade while the application was running.' }
     if ((Get-FileHash -LiteralPath $executable).Hash -ne $beforeUpgrade) { throw 'Setup changed the running executable.' }
     $blockedUninstall = Invoke-Setup $uninstaller @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=""$(Join-Path $workspace 'blocked-uninstall.log')""")
     if ($blockedUninstall -eq 0 -or -not (Test-Path -LiteralPath $executable)) { throw 'Uninstall did not refuse while the application was running.' }
+    if ((Get-StartupCommand) -ne $startupCommand) { throw 'Blocked uninstall changed the startup entry.' }
     Close-Application $application
     $application = $null
     $databaseHash = (Get-FileHash -LiteralPath $database).Hash
@@ -124,6 +148,7 @@ try {
         throw 'Uninstall changed the profile or sample user file.'
     }
     if (Test-Path -LiteralPath $uninstallKey) { throw 'Uninstall left its registration behind.' }
+    if ($null -ne (Get-StartupCommand)) { throw 'Uninstall left its startup entry behind.' }
 
     $report = [ordered]@{
         Passed = $true
@@ -135,10 +160,13 @@ try {
         PreviousInstallerSha256 = if ($PreviousInstaller) { (Get-FileHash -LiteralPath $PreviousInstaller).Hash } else { $null }
         InstallerUpgrade = if ($PreviousInstaller) { 'Previous package to candidate' } else { 'Candidate reinstall' }
         SingleInstanceRefusal = $true
+        NativeTrayRegistrationAndRestore = $true
         RunningUpgradeRefused = $true
         RunningUninstallRefused = $true
         GracefulExit = $true
         ProfileAndUserFilePreserved = $true
+        StartupEntryRetainedOnUpgrade = $true
+        StartupEntryRemovedOnUninstall = $true
         SharedRuntimes = $dotnetRuntimes
         SharedRuntimeFolders = @($sharedRuntimeFolders)
         RequiredNoSharedDotNet = [bool]$RequireNoSharedDotNet
@@ -149,6 +177,12 @@ try {
     $report | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $ReportPath -Encoding utf8
     Write-Output "Package acceptance passed. Report: $ReportPath"
 } finally {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($startupKey, $true)
+    try {
+        if ($null -ne $key -and $key.GetValue('Dowlume') -eq $startupCommand) {
+            $key.DeleteValue('Dowlume', $false)
+        }
+    } finally { if ($null -ne $key) { $key.Dispose() } }
     if ($null -ne $application -and -not $application.HasExited) {
         $null = $application.CloseMainWindow()
         $null = $application.WaitForExit(30000)
