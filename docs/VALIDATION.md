@@ -1,5 +1,19 @@
 # Local validation record
 
+## 2026-10-16: Native Recycle Bin capacity failures
+
+The tester supplied the complete native summary recorded at `2026-10-16T18:46:22.3598918Z` from the same Windows 11 Pro build 26300 standard account. The self-contained worker used the exact candidate assemblies extracted from the verified portable archive. Ordinary recycling/Windows shell restore passed with a matching hash, and disabled-bin refusal preserved the source. A 2 MiB sample with a 1 MiB bin failed the source-preservation assertion. Adding a second 768 KiB sample to a 1 MiB bin recycled the incoming item but lost the earlier recycled sentinel. The script reported successful restoration of the original guest policy.
+
+Acceptance is **failed**, not waived. A post-failure checkpoint preserves the guest before read-only evidence collection. The original clean and pre-probe checkpoints, worker, fixtures, and reports are retained. No failed test was rerun after the tester requested investigation. Detailed per-case reports are being collected to distinguish the oversized sample's exact outcome from the harness's later restore attempts. See [capacity investigation](RECYCLE_CAPACITY_INVESTIGATION.md) for the implementation findings and proposed same-volume recoverable quarantine. No replacement implementation or release publication is claimed.
+
+## 2026-10-16: Clean-guest package acceptance
+
+The tester supplied the guest launcher's successful JSON summary, recorded at `2026-10-16T18:39:20.3258006Z`, after running the staged kit from the signed-in standard `DowlumeTester` desktop. The guest was freshly installed from the verified official Windows 11 x64 ISO; the tester confirmed no .NET SDK, shared runtime, or development tools were installed. The launcher enforced `-RequireNoSharedDotNet`, verified the standard account and package hashes, and completed successfully. Windows reported Microsoft Windows 11 Pro, version `10.0.26300`, build `26300`.
+
+The tested source is `cf42326f4560515b1574ebe7794ef645a551bc21`; installer SHA-256 is `73C465CBFC4A47562D4859B9EF9AE0338EF66C9D836C5B07599E4CD37C93F507`. The tester explicitly confirmed native notification-area registration and restoration from hidden/minimized states. The completed script also covers portable launch/exit, previous-candidate upgrade, duplicate-instance and running-app guards, startup-entry retention/removal, uninstall, and profile/fictional-file preservation. The full `package-result.json` and transcript remain in the guest; the tester-supplied summary is retained separately on the host, with its provenance identified. This is a reported guest result, not an independently retrieved raw report.
+
+The host retained clean and pre-Recycle-Bin checkpoints. Manual first use, actual sign-in/startup behavior, native disabled/full-bin checks, Windows restore, and independent review remain separate gates. The release has not been published.
+
 ## 2026-10-16: Hyper-V guest preparation
 
 Hyper-V access now works from the development session; `Get-VM` initially returned no guests. A dedicated Generation 2 VM was created with two virtual CPUs, 4–6 GiB dynamic memory, a 96 GiB dynamic disk, Secure Boot, and virtual TPM. The firmware/security settings were queried after creation. The VM was initially left powered off pending official Windows 11 x64 media and interactive Windows setup. No guest acceptance test has run.
