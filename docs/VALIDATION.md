@@ -6,7 +6,7 @@ Tray/startup implementation: `3218f6a` (PR #12, merged after both hosted workflo
 
 | Check | Result |
 | --- | --- |
-| Regression suite | 71 tests passed: 69 regular tests and two native WindowsShell tests; no failures or skips. |
+| Regression suite | 72 tests passed: 70 regular tests and two native WindowsShell tests; no failures or skips. Closing during a pending confirmation cancels it without organizing files or hanging shutdown. |
 | Tray regression | Application-level attachment, reopening a hidden/minimized window from both commands, and disposal covered headlessly. Native Windows icon registration and UI-Automation Hide to tray followed by native click delivery also passed. |
 | Windows startup | Default-off behavior, failure feedback, quoted paths, ownership-scoped removal, and unsupported hosts covered. Packaged upgrade retained the fixture startup entry; uninstall removed it. Actual sign-in remains a VM/manual check. |
 | Race conditions | Verified source handles refused writes/renames/replacement; late destination collisions preserved both files; directory leases blocked ancestor renames. Overlapping review actions rejected the stale second decision. |

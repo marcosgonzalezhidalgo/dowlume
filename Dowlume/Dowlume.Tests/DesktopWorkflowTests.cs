@@ -15,6 +15,38 @@ namespace Dowlume.Tests;
 public sealed class DesktopWorkflowTests
 {
     [Fact]
+    public async Task ClosingDuringConfirmationCancelsWithoutOrganizingFiles()
+    {
+        using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        await session.Dispatch(async () =>
+        {
+            using var workspace = new TemporaryWorkspace();
+            string source = workspace.CreateFile("consent.pdf");
+            var store = new SqliteStateStore(workspace.Database);
+            store.SaveSettings(new AppSettings { DownloadsPath = workspace.Downloads });
+            var organizer = new DownloadOrganizer(store, new SafeFileMover(), new FileReadiness(TimeSpan.Zero, TimeSpan.Zero), new NoRecycle());
+            var window = new MainWindow();
+            var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            window.Closed += (_, _) => closed.TrySetResult();
+            var model = new MainViewModel(store, organizer, new DesktopDialogs(window),
+                new DiagnosticLog(Path.Combine(workspace.Root, "diagnostics.jsonl")));
+            window.DataContext = model;
+            window.Show();
+            await model.PreviewCommand.ExecuteAsync(null);
+            Task confirmation = model.StartCommand.ExecuteAsync(null);
+            Assert.Single(window.OwnedWindows);
+            window.Close();
+            await confirmation.WaitAsync(TimeSpan.FromSeconds(3));
+            await closed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.True(File.Exists(source));
+            Assert.Empty(store.GetOperations());
+            Assert.False(model.IsMonitoring);
+            return true;
+        }, timeout.Token);
+    }
+
+    [Fact]
     public async Task TrayRemainsAttachedWhileHiddenAndBothOpenActionsRestoreTheWindow()
     {
         using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));
@@ -79,28 +111,29 @@ public sealed class DesktopWorkflowTests
     [Fact]
     public async Task ActivitySearchPagingAndUndoWorkWithOlderHistory()
     {
+        using var workspace = new TemporaryWorkspace();
+        var settings = new AppSettings { DownloadsPath = workspace.Downloads };
+        var store = new SqliteStateStore(workspace.Database);
+        store.SaveSettings(settings);
+        var organizer = new DownloadOrganizer(store, new SafeFileMover(), new FileReadiness(TimeSpan.Zero, TimeSpan.Zero), new NoRecycle());
+        string source = workspace.CreateFile("Older report.pdf");
+        await organizer.OrganizeAsync(source, settings);
+        OperationRecord original = Assert.Single(store.GetOperations());
+        // Durable fixture writes can be slow on hosted disks; the UI deadline starts after setup.
+        for (int index = 0; index < 205; index++)
+        {
+            store.SaveOperation(original with
+            {
+                Id = Guid.NewGuid(),
+                SourcePath = Path.Combine(workspace.Downloads, $"other-{index}.pdf"),
+                Status = OperationStatus.Failed,
+                Error = "Disposable history fixture."
+            });
+        }
         using var session = HeadlessUnitTestSession.StartNew(typeof(TestAppBuilder));
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         await session.Dispatch(async () =>
         {
-            using var workspace = new TemporaryWorkspace();
-            var settings = new AppSettings { DownloadsPath = workspace.Downloads };
-            var store = new SqliteStateStore(workspace.Database);
-            store.SaveSettings(settings);
-            var organizer = new DownloadOrganizer(store, new SafeFileMover(), new FileReadiness(TimeSpan.Zero, TimeSpan.Zero), new NoRecycle());
-            string source = workspace.CreateFile("Older report.pdf");
-            await organizer.OrganizeAsync(source, settings);
-            OperationRecord original = Assert.Single(store.GetOperations());
-            for (int index = 0; index < 205; index++)
-            {
-                store.SaveOperation(original with
-                {
-                    Id = Guid.NewGuid(),
-                    SourcePath = Path.Combine(workspace.Downloads, $"other-{index}.pdf"),
-                    Status = OperationStatus.Failed,
-                    Error = "Disposable history fixture."
-                });
-            }
             var dialogs = new TestDialogs { Confirm = true };
             var model = new MainViewModel(store, organizer, dialogs, new DiagnosticLog(Path.Combine(workspace.Root, "diagnostics.jsonl")));
             var window = new MainWindow { DataContext = model };

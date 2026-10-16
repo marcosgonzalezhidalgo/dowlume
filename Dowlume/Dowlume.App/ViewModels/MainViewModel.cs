@@ -159,6 +159,7 @@ public partial class MainViewModel : ObservableObject
         {
             await Task.Run(() => _organizer.OrganizeAsync(item.SourcePath, settings, _shutdown.Token, item.ContentHash));
         }
+        _shutdown.Token.ThrowIfCancellationRequested();
         _monitor = new DownloadMonitor(settings,
             (path, token) => _organizer.OrganizeAsync(path, settings, token),
             token => _organizer.ReconcileAsync(settings, token), ReportBackgroundError);
