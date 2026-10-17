@@ -1,5 +1,50 @@
+param([switch]$IncludeRawBinInventory)
+
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+function Get-RawBinInventory([string]$Directory) {
+    $entries = [Collections.Generic.List[object]]::new()
+    $status = 'Complete'
+    $failure = $null
+    try {
+        $ancestor = [IO.Path]::GetFullPath($Directory)
+        while ($ancestor) {
+            $item = Get-Item -LiteralPath $ancestor -Force -ErrorAction Stop
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                throw 'Refusing a redirected raw bin path.'
+            }
+            $ancestor = [IO.Path]::GetDirectoryName($ancestor)
+        }
+        foreach ($item in Get-ChildItem -LiteralPath $Directory -Force -ErrorAction Stop) {
+            $hash = $null
+            $entryError = $null
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                $entryError = 'Reparse point; not followed.'
+            }
+            elseif ($item.PSIsContainer) {
+                $entryError = 'Directory; not traversed. The probes create individual files only.'
+            }
+            else {
+                try { $hash = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256 -ErrorAction Stop).Hash }
+                catch { $entryError = $_.Exception.Message }
+            }
+            if ($entryError) { $status = 'Incomplete' }
+            $entries.Add([ordered]@{
+                Name = $item.Name
+                Bytes = if ($item.PSIsContainer) { $null } else { $item.Length }
+                Sha256 = $hash
+                Error = $entryError
+            })
+        }
+    }
+    catch {
+        $status = 'Incomplete'
+        $failure = $_.Exception.Message
+    }
+    return [ordered]@{ Directory = $Directory; Status = $status; Entries = $entries.ToArray(); Error = $failure }
+}
+
 $computer = Get-CimInstance Win32_ComputerSystem
 if ($computer.Manufacturer -ne 'Microsoft Corporation' -or $computer.Model -ne 'Virtual Machine' -or $env:USERNAME -ne 'DowlumeTester') {
     throw 'Collect evidence only from the disposable DowlumeTester Hyper-V guest.'
@@ -48,6 +93,14 @@ $evidence = [ordered]@{
     Runs = @($runEvidence)
     RecycleBinItemCount = $bin.Items().Count
     RemainingProbeBinItems = @($binEvidence)
+}
+if ($IncludeRawBinInventory) {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    try { $accountSid = $identity.User.Value } finally { $identity.Dispose() }
+    $volumeRoot = [IO.Path]::GetPathRoot($fixtureRoot)
+    $rawBinPath = Join-Path (Join-Path $volumeRoot '$Recycle.Bin') $accountSid
+    $evidence.RawBinInventory = Get-RawBinInventory $rawBinPath
+    $evidence.RawBinScope = 'Current account on the fixture volume only; direct entries including hidden files. No restoration, recursion, deletion, ownership or ACL changes. Incomplete inventory is not an empty bin.'
 }
 $evidence | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $evidenceDirectory 'EVIDENCE.json') -Encoding UTF8
 $evidence | ConvertTo-Json -Depth 12
