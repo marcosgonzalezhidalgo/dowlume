@@ -1,10 +1,20 @@
 # Local validation record
 
+## 2026-10-17: Restore timing and two-run evidence review
+
+The tester supplied oversized reports and final fixture inventories for two existing runs, recorded at `2026-10-16T18:46:21.5742316Z` and `2026-10-16T18:49:40.815674Z`. Both oversized reports show IOException with embedded shell result `00270008`, source absent, and matching candidate assembly hashes. Both final inventories lack the oversized and sentinel sources; the shell bin inventory is empty. The reported excerpts were retained separately on the host with their tester-supplied provenance. The second run's full summary has not been independently retrieved.
+
+Source review confirms that the harness never deletes fixtures or chooses an alternative restore directory. It attempts shell restore after the immediate report, explaining the near-capacity source's later presence. Oversized restore outcomes were not recorded separately. No lasting oversized restoration is visible; permanent deletion is the leading explanation, with raw bin entries still unexamined. The optional read-only collector extension can inspect hidden/orphaned payloads without repeating any native operation. See the [timing analysis and isolated acceptance plan](RECYCLE_CAPACITY_INVESTIGATION.md#2026-10-17-two-run-evidence-and-restore-timing).
+
+The host still has the running acceptance guest and all three checkpoints. No failed native test was requested or executed during this investigation. The release remains blocked and unpublished; the recovery-storage proposal remains unimplemented.
+
+`scripts/Test-RecycleEvidenceInventory.ps1` passed five local cases using a new fictional directory: accessible empty inventory, hidden orphan payload with preserved hash/attributes, missing-path error, untraversed directory, and redirected-root refusal. The test loads only the read-only inventory function and never invokes the shell adapter; it is also included in the Windows build workflow. These checks validate the collector, not application recoverability.
+
 ## 2026-10-16: Native Recycle Bin capacity failures
 
 The tester supplied the complete native summary recorded at `2026-10-16T18:46:22.3598918Z` from the same Windows 11 Pro build 26300 standard account. The self-contained worker used the exact candidate assemblies extracted from the verified portable archive. Ordinary recycling/Windows shell restore passed with a matching hash, and disabled-bin refusal preserved the source. A 2 MiB sample with a 1 MiB bin failed the source-preservation assertion. Adding a second 768 KiB sample to a 1 MiB bin recycled the incoming item but lost the earlier recycled sentinel. The script reported successful restoration of the original guest policy.
 
-Acceptance is **failed**, not waived. A post-failure checkpoint preserves the guest before read-only evidence collection. The original clean and pre-probe checkpoints, worker, fixtures, and reports are retained. No failed test was rerun after the tester requested investigation. Detailed per-case reports are being collected to distinguish the oversized sample's exact outcome from the harness's later restore attempts. See [capacity investigation](RECYCLE_CAPACITY_INVESTIGATION.md) for the implementation findings and proposed same-volume recoverable quarantine. No replacement implementation or release publication is claimed.
+Acceptance is **failed**, not waived. A post-failure checkpoint preserves the guest before read-only evidence collection. The original clean and pre-probe checkpoints, worker, fixtures, and reports are retained. This summary originally described one run; the subsequent collector excerpts identify two existing runs, as recorded above. No rerun was requested by the investigation. See [capacity investigation](RECYCLE_CAPACITY_INVESTIGATION.md) for the implementation findings and proposed same-volume recoverable quarantine. No replacement implementation or release publication is claimed.
 
 ## 2026-10-16: Clean-guest package acceptance
 
