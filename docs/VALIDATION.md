@@ -8,6 +8,8 @@ The exported VHDX and forensic copy matched SHA-256 `3AE5611E04F6031DF15EC3E4F6B
 
 The first run's reports were read directly from the checkpoint. Its ordinary, disabled, and near-capacity fixtures match the expected hashes; oversized and sentinel files are absent from that directory. The second run's directory is absent, consistent with capture before that run. See [checkpoint access and limitations](RECYCLE_CAPACITY_INVESTIGATION.md#checkpoint-access-with-its-existing-clear-key), including why adding a protector now would not retroactively unlock an older checkpoint.
 
+The subsequent read-only scan visited 185,178 valid MFT records, including deleted records, with no inspection errors among those records. It found no qualifying oversized/sentinel original-name or `$R*.bin` record at the expected fixture sizes. The image's SHA-256 remained unchanged after this scan. No missing contents could be hash-verified through that search. Reused/invalid records and raw-cluster carving are outside this bounded assessment; it does not prove physical irrecoverability. The four edited documentation files passed local link/anchor validation (27 targets) and `git diff --check`; no image assets changed.
+
 This is forensic access validation, not a passed application preservation test. No native acceptance probe was repeated, no contents were restored, and no application behavior changed. Stable publication and independent recovery validation remain blocked.
 
 ## 2026-10-17: Raw metadata correlation
