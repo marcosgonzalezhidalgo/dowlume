@@ -1,5 +1,17 @@
 # Local validation record
 
+## 2026-10-17: Existing clear key permits checkpoint inspection
+
+A separate forensic copy of the exported failure checkpoint was opened read-only with host-only Dissect tools. The Windows partition contains an existing BitLocker clear key; unlocking in memory succeeded and exposed a valid NTFS filesystem. A recovery password is **not required for this image**. This corrects the earlier assessment below, which reflected the NTFS-only reader's limitation rather than the available BitLocker unlocking mechanisms.
+
+The exported VHDX and forensic copy matched SHA-256 `3AE5611E04F6031DF15EC3E4F6B78323C3B1D8E0B29650892461866751AC65C5`; the copy's hash remained identical after inspection. Private provenance, package installation hashes, scripts, and `CLEAR-KEY-RESULT.json` are retained with the evidence. No keys were printed/saved, no protectors were added, and the original VM, export, and checkpoints were not modified. The copy was not mounted or booted.
+
+The first run's reports were read directly from the checkpoint. Its ordinary, disabled, and near-capacity fixtures match the expected hashes; oversized and sentinel files are absent from that directory. The second run's directory is absent, consistent with capture before that run. See [checkpoint access and limitations](RECYCLE_CAPACITY_INVESTIGATION.md#checkpoint-access-with-its-existing-clear-key), including why adding a protector now would not retroactively unlock an older checkpoint.
+
+The subsequent read-only scan visited 185,178 valid MFT records, including deleted records, with no inspection errors among those records. It found no qualifying oversized/sentinel original-name or `$R*.bin` record at the expected fixture sizes. The image's SHA-256 remained unchanged after this scan. No missing contents could be hash-verified through that search. Reused/invalid records and raw-cluster carving are outside this bounded assessment; it does not prove physical irrecoverability. The four edited documentation files passed local link/anchor validation (27 targets) and `git diff --check`; no image assets changed.
+
+This is forensic access validation, not a passed application preservation test. No native acceptance probe was repeated, no contents were restored, and no application behavior changed. Stable publication and independent recovery validation remain blocked.
+
 ## 2026-10-17: Raw metadata correlation
 
 The tester reported a complete, error-free raw inventory: four `$I` metadata files plus `desktop.ini`, with no `$R` content files. Their reported sizes and SHA-256 values were retained privately on the host. The subsequent raw-byte output was independently hashed and decoded on the host: all four records describe the ordinary and near-capacity fixtures restored by the harness, one of each per run. Their report content hashes match the earlier retained-source inventory. None describes an oversized or sentinel fixture. Metadata alone cannot verify a missing content hash or restore file contents.
@@ -8,7 +20,7 @@ The new console-only metadata reader verifies the supplied manifest before decod
 
 Read-only host inspection confirmed all three checkpoints. The preserved failure checkpoint's creation time is `2026-10-16T18:49:38.5401180Z`, preceding the second oversized report; the earlier wording describing it as the completed failed state must not be interpreted as proof that it includes both completed runs. See [recovery assessment](RECYCLE_CAPACITY_INVESTIGATION.md#raw-bin-evidence-and-content-recovery). Native implementation changes and release publication remain on hold.
 
-Export of that checkpoint completed into separate private host storage. Windows refused a read-only mount with error `0x80070522`; the exported disk remained unattached. A host-only image reader, built without warnings using DiscUtils 0.16.13 and opening the export with read-only file access, identified BitLocker on the Windows partition. It could not inspect the encrypted fixture paths. This is incomplete recovery coverage, not proof that the checkpoint lacks recoverable contents. No original checkpoint was restored/deleted, no guest recovery software was installed, and no file was recovered or restored. Local unlocking is still required for offline filesystem analysis.
+Export of that checkpoint completed into separate private host storage. Windows refused a read-only mount with error `0x80070522`; the exported disk remained unattached. A host-only image reader, built without warnings using DiscUtils 0.16.13 and opening the export with read-only file access, identified BitLocker on the Windows partition. It could not inspect the encrypted fixture paths. This was incomplete recovery coverage, not proof that the checkpoint lacks recoverable contents. No original checkpoint was restored/deleted, no guest recovery software was installed, and no file was recovered or restored. The later clear-key inspection above resolves this access limitation without a recovery password.
 
 ## 2026-10-17: Restore timing and two-run evidence review
 
