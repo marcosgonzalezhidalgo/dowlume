@@ -2,11 +2,13 @@
 
 ## 2026-10-17: Raw metadata correlation
 
-The tester reported a complete, error-free raw inventory: four `$I` metadata files plus `desktop.ini`, with no `$R` content files. Their reported sizes and SHA-256 values were retained privately on the host. Record-to-fixture association is pending actual metadata decoding; metadata alone cannot verify a missing content hash or restore file contents.
+The tester reported a complete, error-free raw inventory: four `$I` metadata files plus `desktop.ini`, with no `$R` content files. Their reported sizes and SHA-256 values were retained privately on the host. The subsequent raw-byte output was independently hashed and decoded on the host: all four records describe the ordinary and near-capacity fixtures restored by the harness, one of each per run. Their report content hashes match the earlier retained-source inventory. None describes an oversized or sentinel fixture. Metadata alone cannot verify a missing content hash or restore file contents.
 
 The new console-only metadata reader verifies the supplied manifest before decoding and correlates only recognized probe paths with existing reports. Nine in-memory parser checks passed, including Unicode paths, field decoding, unsupported versions, truncated/oversized length declarations, missing/embedded terminators, invalid encoding, and invalid FILETIME. No native acceptance test or recovery operation was executed.
 
 Read-only host inspection confirmed all three checkpoints. The preserved failure checkpoint's creation time is `2026-10-16T18:49:38.5401180Z`, preceding the second oversized report; the earlier wording describing it as the completed failed state must not be interpreted as proof that it includes both completed runs. See [recovery assessment](RECYCLE_CAPACITY_INVESTIGATION.md#raw-bin-evidence-and-content-recovery). Native implementation changes and release publication remain on hold.
+
+Export of that checkpoint completed into separate private host storage. Windows refused a read-only mount with error `0x80070522`; the exported disk remained unattached. A host-only image reader, built without warnings using DiscUtils 0.16.13 and opening the export with read-only file access, identified BitLocker on the Windows partition. It could not inspect the encrypted fixture paths. This is incomplete recovery coverage, not proof that the checkpoint lacks recoverable contents. No original checkpoint was restored/deleted, no guest recovery software was installed, and no file was recovered or restored. Local unlocking is still required for offline filesystem analysis.
 
 ## 2026-10-17: Restore timing and two-run evidence review
 
