@@ -20,7 +20,7 @@ The tester supplied this native summary, recorded at `2026-10-16T18:46:22.359891
 
 The harness refuses an initially nonempty bin. It creates only random fictional probe files and checks their hashes. After each case it attempts to restore any remaining probe through the Windows shell, so final source presence must be interpreted alongside the per-operation report. It never empties the bin. A summary failure alone must not be relabeled as proof of a particular native callback sequence.
 
-Three VM checkpoints retain the clean baseline, state after package acceptance/before native probes, and failed state before evidence collection. `Collect-WindowsRecycleEvidence.ps1` copies existing JSON reports, records source fixture hashes, and inventories only bin entries originating from the fixture directory. It does not run a probe, restore an item, or change policy. Keep raw guest evidence private; it contains local paths. Do not restore or delete checkpoints, clean fixture folders, empty the bin, or overwrite the original probe reports.
+Three VM checkpoints retain the clean baseline, state after package acceptance/before native probes, and a state after the first failure. The last checkpoint's creation time precedes the second oversized report; do not assume it contains both completed runs. `Collect-WindowsRecycleEvidence.ps1` copies existing JSON reports, records source fixture hashes, and inventories only bin entries originating from the fixture directory. It does not run a probe, restore an item, or change policy. Keep raw guest evidence private; it contains local paths. Do not restore or delete checkpoints, clean fixture folders, empty the bin, or overwrite the original probe reports.
 
 ## 2026-10-17: Two-run evidence and restore timing
 
@@ -41,6 +41,33 @@ Inspection of [the harness](../scripts/Test-WindowsRecycleAcceptance.ps1) and [w
 The original collector enumerated the shell namespace, not raw filesystem entries. Its empty result cannot exclude an orphaned bin payload or shell indexing discrepancy. The optional `-IncludeRawBinInventory` collector extension reads direct entries, including hidden files, in the current account's `$Recycle.Bin` directory on the fixture volume and records names, sizes, SHA-256 hashes, and access errors. Compare payload hashes with the existing oversized/sentinel reports. It does not recurse, restore, change permissions, or delete; an incomplete read must never be interpreted as an empty directory. This is a targeted read-only diagnostic, not an unallocated-space forensic scan or an all-volume search. Even an empty raw inventory cannot establish physical irrecoverability.
 
 ## Implementation findings
+
+### Raw bin evidence and content recovery
+
+The tester subsequently supplied a complete raw inventory with no access errors: four `$I` files (two 268-byte records and two 258-byte records), `desktop.ini`, and **no `$R` payloads**. This closes the original collector's hidden-file coverage gap for that account and volume at collection time. The subsequent metadata output, collected at `2026-10-17T11:48:09.2455616Z`, supplied the raw bytes. Host-side SHA-256 checks and decoding independently reproduced all four metadata results:
+
+| Metadata record | Run | Original fixture | Original bytes | Metadata deletion time (UTC, 2026-10-16) |
+| --- | --- | --- | --- | --- |
+| `$I8YR4X7.bin` | First | `probe-ordinary.bin` | 65,536 | 18:46:20.307 |
+| `$I73L38B.bin` | First | `probe-near-capacity.bin` | 786,432 | 18:46:22.154 |
+| `$IEB7VE0.bin` | Second | `probe-ordinary.bin` | 65,536 | 18:49:39.774 |
+| `$I5N7735.bin` | Second | `probe-near-capacity.bin` | 786,432 | 18:49:41.352 |
+
+All four expected content hashes from the associated reports match the corresponding retained-source hashes in the earlier tester-supplied inventory. These are residual metadata records for files the harness restored, **not** records for the missing oversized or sentinel contents. No surviving `$I` or `$R` for either missing case was identified in the complete inventory. There is no remaining ambiguity about which fixtures these four records describe; their absence of paired payloads does not indicate loss of those four restored files.
+
+The [format research by Joachim Metz](https://github.com/libyal/dtformats/blob/main/documentation/Windows%20Recycle.Bin%20file%20formats.asciidoc) describes version-2 records containing original size, deletion FILETIME, and a length-prefixed UTF-16 path. They do not store file content or its hash. The decoded near-capacity and ordinary paths account for the observed 268-byte and 258-byte lengths respectively.
+
+`Read-WindowsRecycleMetadata.ps1` accepts a manifest of the four reported names, sizes, and SHA-256 hashes. It reads through handles that deny writing/deletion, checks the manifest, retains raw bytes in its console output, validates the version/length/encoding/time, and associates only recognized fixture paths with their existing reports. Expected content hashes are explicitly attributed to those reports; they are not recovered from metadata or verified against missing payloads. Unknown formats and read errors remain explicit. The script prints JSON only and does not write a report, restore content, alter permissions, or call the shell adapter. Raw metadata and paths must remain in private acceptance storage.
+
+The current evidence establishes no normal Recycle Bin restore path for the missing contents. It does **not** establish physical irrecoverability. A separate copy of the preserved checkpoint may permit read-only filesystem/deleted-record inspection, with any found content verified against the original report hash. The clean and pre-probe checkpoints predate generation of the random fixtures; recreating a filename or generating new bytes would not recover them. The failure checkpoint was created at `2026-10-16T18:49:38.5401180Z`, before the second oversized report at `18:49:40.815674Z`; its exact captured state needs inspection. Never restore, merge, or delete the original checkpoint to investigate this.
+
+The failure checkpoint was exported to separate private host storage for inspection. Its exported VHDX is self-contained; the original three checkpoints remain present. A read-only Windows mount attempt failed with privilege error `0x80070522` and left the image unattached. A separate host-only DiscUtils 0.16.13 reader then opened the export with `FileAccess.Read` and identified the Windows partition's `-FVE-FS-` BitLocker signature. The image's encrypted Windows partition could not be enumerated as NTFS. **An empty file list from that attempt is not a negative recovery result.** No file contents were restored or recovered, and no recovery utility was installed in the guest. The inspector is kept with the private evidence and introduces no application dependency.
+
+Recovery status is therefore bounded: ordinary/near-capacity contents already exist at their restored paths with matching reported hashes; oversized/sentinel contents have no identified source or bin copy; checkpoint and deleted-cluster recovery remain unverified behind the encrypted volume. Local unlocking of the separate export and read-only forensic inspection are prerequisites to a stronger recovery conclusion. Keep any recovery credentials local. Do not boot the exported saved state, since resuming a checkpoint taken around a probe could resume an unwanted test operation.
+
+Microsoft recommends minimizing writes when [attempting deleted-file recovery](https://support.microsoft.com/en-gb/windows/experience/backup-recovery/windows-file-recovery). Do not install recovery tools in the evidence guest or write recovered output onto its system volume. Forensic recovery remains unverified; all application/native implementation changes are on hold while correlating these records and assessing recoverability.
+
+### Native adapter contract
 
 `WindowsRecycleBin` requests `FOFX_RECYCLEONDELETE` with `FOFX_EARLYFAILURE`, `FOF_NOERRORUI`, `FOF_SILENT`, and `FOF_NOCONFIRMATION`. The latter automatically accepts shell confirmations; `FOF_WANTNUKEWARNING`, which requests a warning for permanent destruction, is absent. These documented flag semantics identify a possible silent fallback path, but do not prove the exact callback sequence in these runs. See [Microsoft's operation flags](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileoperation-setoperationflags).
 
