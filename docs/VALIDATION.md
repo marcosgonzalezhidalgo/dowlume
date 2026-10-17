@@ -1,5 +1,13 @@
 # Local validation record
 
+## 2026-10-17: Raw metadata correlation
+
+The tester reported a complete, error-free raw inventory: four `$I` metadata files plus `desktop.ini`, with no `$R` content files. Their reported sizes and SHA-256 values were retained privately on the host. Record-to-fixture association is pending actual metadata decoding; metadata alone cannot verify a missing content hash or restore file contents.
+
+The new console-only metadata reader verifies the supplied manifest before decoding and correlates only recognized probe paths with existing reports. Nine in-memory parser checks passed, including Unicode paths, field decoding, unsupported versions, truncated/oversized length declarations, missing/embedded terminators, invalid encoding, and invalid FILETIME. No native acceptance test or recovery operation was executed.
+
+Read-only host inspection confirmed all three checkpoints. The preserved failure checkpoint's creation time is `2026-10-16T18:49:38.5401180Z`, preceding the second oversized report; the earlier wording describing it as the completed failed state must not be interpreted as proof that it includes both completed runs. See [recovery assessment](RECYCLE_CAPACITY_INVESTIGATION.md#raw-bin-evidence-and-content-recovery). Native implementation changes and release publication remain on hold.
+
 ## 2026-10-17: Restore timing and two-run evidence review
 
 The tester supplied oversized reports and final fixture inventories for two existing runs, recorded at `2026-10-16T18:46:21.5742316Z` and `2026-10-16T18:49:40.815674Z`. Both oversized reports show IOException with embedded shell result `00270008`, source absent, and matching candidate assembly hashes. Both final inventories lack the oversized and sentinel sources; the shell bin inventory is empty. The reported excerpts were retained separately on the host with their tester-supplied provenance. The second run's full summary has not been independently retrieved.
